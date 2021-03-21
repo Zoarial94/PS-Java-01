@@ -42,7 +42,7 @@ public class ServerNode {
     static final String CONFIG_FILE = "/etc/PS-Java-Test.config";
 
     private void print(String str) {
-        System.out.println("ServerConfig: " + str);
+        System.out.println("ServerNode: " + str);
     }
 
     public ServerNode() {
@@ -56,6 +56,7 @@ public class ServerNode {
         } catch (FileNotFoundException ex) {
             return;
         }
+
         try {
             prop.load(is);
         } catch (IOException ex) {
@@ -95,11 +96,8 @@ public class ServerNode {
             print("Staring Server...");
         }
 
-        try {
-            _server.start();
-        } catch(IOException ex) {
-            throw ex;
-        }
+        Thread t1 = new Thread(_server);
+        t1.start();
 
         return true;
     }
