@@ -272,7 +272,7 @@ public class ServerServer extends Thread {
 
         while(!close) {
             byte[] buf = "Testing".getBytes();
-            byte[] addr = {10, 94, 50, 95};
+            byte[] addr = {10, 94, 50, 146};
             print("Sending packet...");
             try {
                 DatagramPacket dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _serverPort);
