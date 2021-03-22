@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+
+
 public class ServerNode {
 
     ServerServer _server;
@@ -21,6 +23,7 @@ public class ServerNode {
     boolean _isVolatile;
     String _configFileName;
     int _serverPort;
+    boolean _isHeadCapable;
 
     //Server can update these at runtime
     int _messageTimeout;
@@ -69,6 +72,7 @@ public class ServerNode {
         _serverPort = Integer.parseInt(prop.getProperty(DEVICE + "port", "9494"));
         _messageTimeout = Integer.parseInt(prop.getProperty(DEVICE + "message_timeout", "300"));
         _pingTimeout = Integer.parseInt(prop.getProperty(DEVICE + "ping_timeout", "90"));
+        _isHeadCapable = Boolean.parseBoolean(prop.getProperty(DEVICE + "is_head_capable", "false"));
 
         _logFileName = prop.getProperty(LOGGING + "file_name", "/var/log/PS-Java-Test.log");
         _loggingLevel = Integer.parseInt(prop.getProperty(LOGGING + "level", "1"));
@@ -81,8 +85,9 @@ public class ServerNode {
         print("Ping timeout is " + _pingTimeout);
         print("Log file name is " + _logFileName);
         print("Logging Level is " + _loggingLevel);
+        print("isHeadCapable is " + _isHeadCapable);
 
-        _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout);
+        _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
 
         _isInitialized = true;
 
