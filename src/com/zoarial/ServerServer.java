@@ -274,9 +274,13 @@ public class ServerServer extends Thread {
             byte[] buf = "Testing".getBytes();
             byte[] addr = {10, 94, 50, (byte) 146};
             print("Sending packet...");
+            DatagramPacket dp;
             try {
-                DatagramPacket dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _serverPort);
+                dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _serverPort);
+                _ds.send(dp);
             } catch (UnknownHostException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
                 e.printStackTrace();
             }
             try {
