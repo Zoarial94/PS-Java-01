@@ -209,7 +209,7 @@ public class ServerServer extends Thread {
 
     public void run() {
 
-        if(!_isHeadCapable) {
+        if(_isHeadCapable) {
             runHeadCapable();
         } else {
             runHeadIncapable();
