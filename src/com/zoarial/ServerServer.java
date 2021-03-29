@@ -133,7 +133,12 @@ class DatagramSocketHelper extends Thread {
         return tmp;
     }
 
+    public void print(String str) {
+        System.out.println("DatagramSocketHelper: " + str);
+    }
+
     public void run() {
+        print("Starting thread...");
         while(!close) {
             DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
             try {
@@ -141,11 +146,12 @@ class DatagramSocketHelper extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-
+            print("Received packet, adding to queue.");
             synchronized (queue) {
                 queue.add(dp);
             }
         }
+        print("Finished thread.");
     }
 
 }
