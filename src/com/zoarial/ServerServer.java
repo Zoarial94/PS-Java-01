@@ -1,11 +1,9 @@
 package com.zoarial;
 
-import javax.xml.crypto.Data;
 import java.io.*;
-import java.lang.reflect.Array;
 import java.net.*;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 class inSocketHelper implements Runnable {
     Thread t;
@@ -196,12 +194,17 @@ public class ServerServer extends Thread {
     byte[] _dpBuf = new byte[65535];
     DatagramSocketHelper _datagramSocketHelper;
 
-    private void print(String str) {
-        System.out.println("ServerServer: " + str);
+    private static <T> void println(T var) {
+        System.out.println("ServerServer: " + var);
     }
 
+    private static void println() {
+        System.out.println();
+    }
+
+
     public ServerServer(String hostname, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) {
-        print("Initializing...");
+        println("Initializing...");
 
         _hostname = hostname;
         _nodeType = nodeType;
@@ -218,14 +221,19 @@ public class ServerServer extends Thread {
         if(_isHeadCapable) {
             runHeadCapable();
         } else {
-            runHeadIncapable();
+            runNotHeadCapable();
         }
         
     }
 
     private void runHeadCapable() {
+        /*
+         *
+         * SETUP
+         *
+         */
         try {
-            print("Starting a server on port " + _serverPort + ".");
+            println("Starting a server on port " + _serverPort + ".");
             _outSocket = new ServerSocket(_serverPort);
             _serverSocketHelper = new ServerSocketHelper(_outSocket);
             _serverSocketHelper.start();
@@ -239,26 +247,41 @@ public class ServerServer extends Thread {
             System.exit(-1);
         }
 
+        /*
+         *
+         * LOOP
+         *
+         */
         int sleepTime = 5000;
         DatagramPacket dp;
         while(!close) {
             try {
-
+                /*
+                 *
+                 * UDP Handler Loop
+                 *
+                 */
                 while(!_datagramSocketHelper.isNextDataEmpty()) {
                     dp = _datagramSocketHelper.getNextData();
                     String str = buildString(dp.getData()).toString();
-                    print("Datagram Packet: " + str);
+                    println("Datagram Packet: " + str);
+                    HeadUDPHandler(dp);
                 }
 
+                /*
+                 *
+                 * TCP Handler Loop
+                 *
+                 */
                 while(!_serverSocketHelper.isNextSocketEmpty()) {
                     _inSockets.add(new inSocketWrapper(_serverSocketHelper.getNextSocket()));
                 }
 
                 for(inSocketWrapper socketWrapper : _inSockets) {
-                    print("Socket Packet: " + socketWrapper.in.readUTF());
+                    println("Socket Packet: " + socketWrapper.in.readUTF());
                 }
 
-                print("Sleeping for " + sleepTime + ".");
+                println("Sleeping for " + sleepTime + ".");
                 sleep(sleepTime);
             } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
@@ -266,34 +289,72 @@ public class ServerServer extends Thread {
         }
     }
 
-    private void runHeadIncapable() {
+    private void runNotHeadCapable() {
 
         try {
             _ds = new DatagramSocket(_serverPort);
         } catch (SocketException e) {
             e.printStackTrace();
         }
-        _datagramSocketHelper = new DatagramSocketHelper(_ds);
-        _datagramSocketHelper.start();
 
-        while(!close) {
-            byte[] buf = "Testing".getBytes();
+       //Find head, either by reading from a save file, or a broadcast.
+        while(!close && true) {
+
+            byte[] buf = new byte[32];
+            System.arraycopy("ZIoT".getBytes(), 0, buf, 0, 4);
+            buf[7] = (byte)_nodeType;
+            System.arraycopy(_hostname.getBytes(), 0, buf, 8, Math.min(24, _hostname.length()));
+
+            //printArray(buf);
+
             byte[] addr = {10, 94, 50, (byte) 146};
-            print("Sending packet...");
+            println("Sending packet...");
             DatagramPacket dp;
             try {
                 dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _serverPort);
                 _ds.send(dp);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
             } catch (IOException e) {
                 e.printStackTrace();
             }
+
+            dp = new DatagramPacket(new byte[65535], 65535);
             try {
-                sleep(5000);
+                println("Waiting for response...");
+                _ds.setSoTimeout(30000);
+                _ds.receive(dp);
+                byte[] data = dp.getData();
+                if(new String(data, 0, 4).equals("ZIoT")) {
+                    println("Packet is Z-IoT");
+                }
+                println("Length: " + dp.getLength());
+
+                InetAddress[] headAddrs = { InetAddress.getByAddress(Arrays.copyOfRange(data, 4, 8)),
+                                            InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
+                                            InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
+
+                printArray(data);
+
+                for(InetAddress i : headAddrs) {
+                    printArray(i.getAddress());
+                }
+
+
+
+            } catch (IOException e) {
+                //e.printStackTrace();
+            }
+
+        }
+
+        //Do logic
+        while(!close) {
+
+            try {
+                sleep(30000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
         }
     }
 
@@ -309,6 +370,68 @@ public class ServerServer extends Thread {
             i++;
         }
         return ret;
+    }
+
+    static void printArray(byte[] arr) {
+        printArray(arr, arr.length);
+    }
+
+    static void printArray(byte[] arr, int len) {
+        String prefix = "Array: ";
+        for(int i = 0; i < len; i++) {
+            if(i == 0) {
+                System.out.print(prefix);
+            } else if (i % 8 == 0) {
+                System.out.print("\n" + prefix);
+            }
+
+            System.out.print((char)arr[i]);
+            System.out.print("(" + (int)arr[i] + ") ");
+        }
+        System.out.println();
+    }
+
+    void HeadUDPHandler(DatagramPacket dp) {
+
+        byte[] data = dp.getData();
+        if(new String(data, 0, 4).equals("ZIoT")) {
+            println("Is Z-IoT Packet.");
+        } else {
+            println("Is not Z-IoT packet.");
+            return;
+        }
+
+        int node = data[7];
+        String hostname = new String(data, 8, 24);
+
+        println("Node type is: " + node);
+        println("Hostname is: " + hostname);
+
+        byte[] response = new byte[16];
+        System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
+        try {
+            System.arraycopy(InetAddress.getLocalHost().getAddress(), 0, response, 4, 4);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        DatagramPacket dpResponse = new DatagramPacket(response, response.length);
+        dpResponse.setAddress(dp.getAddress());
+
+        try {
+            _ds.send(dpResponse);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
+    void NonHeadUDPHandler(DatagramPacket dp) {
+
+    }
+
+    void TCPHandler() {
+
     }
 
 }
