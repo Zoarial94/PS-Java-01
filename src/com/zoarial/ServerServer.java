@@ -4,6 +4,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Enumeration;
 
 class inSocketHelper implements Runnable {
     Thread t;
@@ -180,6 +181,7 @@ public class ServerServer extends Thread {
     final boolean _isVolatile;
     final int _serverPort;
     final boolean _isHeadCapable;
+    final InetAddress _serverIP;
 
     //Server can update these at runtime
     int _messageTimeout;
@@ -214,6 +216,39 @@ public class ServerServer extends Thread {
 
         _messageTimeout = messageTimeout;
         _pingTimeout = pingTimeout;
+
+        Enumeration<NetworkInterface> n = null;
+        try {
+            n = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+        boolean found = false;
+        InetAddress tmp = null;
+        for (; n.hasMoreElements() && !found;)
+        {
+            NetworkInterface e = n.nextElement();
+            if(!e.getName().equals("eth0")) {
+                continue;
+            }
+            Enumeration<InetAddress> a = e.getInetAddresses();
+            for (; a.hasMoreElements() && !found;)
+            {
+
+                InetAddress addr = a.nextElement();
+                System.out.println(e.getName() + ":  " + addr.getHostAddress());
+                try {
+                    if(!addr.equals(InetAddress.getByAddress(new byte[]{127, 0, 0, 1})) && (addr instanceof Inet4Address)) {
+                        tmp = addr;
+                        found = true;
+                    }
+                } catch (UnknownHostException unknownHostException) {
+                    unknownHostException.printStackTrace();
+                }
+            }
+        }
+
+        _serverIP = tmp;
     }
 
     public void run() {
@@ -332,7 +367,7 @@ public class ServerServer extends Thread {
                                             InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
                                             InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
 
-                printArray(data);
+                printArray(data, dp.getLength());
 
                 for(InetAddress i : headAddrs) {
                     printArray(i.getAddress());
@@ -386,7 +421,7 @@ public class ServerServer extends Thread {
             }
 
             System.out.print((char)arr[i]);
-            System.out.print("(" + (int)arr[i] + ") ");
+            System.out.print("(" + Integer.toUnsignedString(arr[i]) + ") ");
         }
         System.out.println();
     }
@@ -409,14 +444,12 @@ public class ServerServer extends Thread {
 
         byte[] response = new byte[16];
         System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
-        try {
-            System.arraycopy(InetAddress.getLocalHost().getAddress(), 0, response, 4, 4);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        }
 
-        DatagramPacket dpResponse = new DatagramPacket(response, response.length);
-        dpResponse.setAddress(dp.getAddress());
+        System.arraycopy(_serverIP.getAddress(), 0, response, 4, 4);
+
+
+        DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _serverPort);
+
 
         try {
             _ds.send(dpResponse);
