@@ -421,7 +421,10 @@ public class ServerServer extends Thread {
             }
 
             System.out.print((char)arr[i]);
-            System.out.print("(" + Integer.toUnsignedString(arr[i]) + ") ");
+            // Java doesnt have unsigned bytes
+            // Java will sign-extend the byte if >= 128
+            // So AND the first byte
+            System.out.print("(" + ((int)arr[i] & 0xFF) + ") ");
         }
         System.out.println();
     }
