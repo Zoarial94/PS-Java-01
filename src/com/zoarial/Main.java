@@ -30,5 +30,7 @@ public class Main {
             print("Server start error.");
             return;
         }
+
+        print("Main is finished.");
     }
 }

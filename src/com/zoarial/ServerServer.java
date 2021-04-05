@@ -42,7 +42,7 @@ class inSocketHelper implements Runnable {
  * Just accepts new connections in a non-blocking fashion
  *
  */
-class ServerSocketHelper extends Thread {
+class ServerSocketHelper extends PrintBaseClass implements Runnable {
 
     ServerSocket servSocket;
     DataInputStream in;
@@ -51,11 +51,8 @@ class ServerSocketHelper extends Thread {
 
     ArrayList<Socket> _inSockets = new ArrayList<>();
 
-    void print(String str) {
-        System.out.println("ServerSocketHelper: " + str);
-    }
-
     public ServerSocketHelper(ServerSocket socket) {
+        super("ServerSocketHelper");
         this.servSocket = socket;
     }
 
@@ -64,7 +61,7 @@ class ServerSocketHelper extends Thread {
             try {
                 Socket tmp = servSocket.accept();
                 synchronized (_inSockets) {
-                    print("Accepting new socket.");
+                    println("Accepting new socket.");
                     _inSockets.add(tmp);
                 }
             } catch (IOException ex) {
@@ -95,7 +92,7 @@ class ServerSocketHelper extends Thread {
 
 }
 
-class DatagramSocketHelper extends Thread {
+class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
     DatagramSocket _ds;
     ArrayList<DatagramPacket> queue = new ArrayList<>();
@@ -104,6 +101,7 @@ class DatagramSocketHelper extends Thread {
     final int BUF_SIZE = 65535;
 
     DatagramSocketHelper(DatagramSocket ds) {
+        super("DatagramSockerHelper");
         _ds = ds;
     }
 
@@ -132,12 +130,9 @@ class DatagramSocketHelper extends Thread {
         return tmp;
     }
 
-    public void print(String str) {
-        System.out.println("DatagramSocketHelper: " + str);
-    }
-
     public void run() {
-        print("Starting thread...");
+
+        println("Starting thread...");
         while(!close) {
             DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
             try {
@@ -145,12 +140,12 @@ class DatagramSocketHelper extends Thread {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            print("Received packet, adding to queue.");
+            println("Received packet, adding to queue.");
             synchronized (queue) {
                 queue.add(dp);
             }
         }
-        print("Finished thread.");
+        println("Finished thread.");
     }
 
 }
@@ -172,7 +167,7 @@ class inSocketWrapper {
     }
 }
 
-public class ServerServer implements Runnable {
+public class ServerServer extends PrintBaseClass implements Runnable {
 
     boolean close = false;
     
@@ -196,16 +191,10 @@ public class ServerServer implements Runnable {
     byte[] _dpBuf = new byte[65535];
     DatagramSocketHelper _datagramSocketHelper;
 
-    private static <T> void println(T var) {
-        System.out.println("ServerServer: " + var);
-    }
-
-    private static void println() {
-        System.out.println();
-    }
-
 
     public ServerServer(String hostname, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) {
+        super("ServerServer");
+
         println("Initializing...");
 
         _hostname = hostname;
@@ -271,11 +260,11 @@ public class ServerServer implements Runnable {
             println("Starting a server on port " + _serverPort + ".");
             _outSocket = new ServerSocket(_serverPort);
             _serverSocketHelper = new ServerSocketHelper(_outSocket);
-            _serverSocketHelper.start();
+            new Thread(_serverSocketHelper).start();
 
             _ds = new DatagramSocket(_serverPort);
             _datagramSocketHelper = new DatagramSocketHelper(_ds);
-            _datagramSocketHelper.start();
+            new Thread(_datagramSocketHelper).start();
 
         } catch(IOException ex) {
             System.out.println("Something happened when starting the server. Exiting.");

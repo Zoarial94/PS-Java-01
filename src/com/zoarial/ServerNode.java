@@ -8,7 +8,7 @@ import java.util.Properties;
 
 
 
-public class ServerNode {
+public class ServerNode extends PrintBaseClass {
 
     ServerServer _server;
 
@@ -21,7 +21,6 @@ public class ServerNode {
     String _hostname;
     int _nodeType;
     boolean _isVolatile;
-    String _configFileName;
     int _serverPort;
     boolean _isHeadCapable;
 
@@ -49,21 +48,22 @@ public class ServerNode {
     }
 
     public ServerNode() {
-        print("Constructing...");
+        super("ServerNode");
+        println("Constructing...");
     }
 
-    public void init() {
-        print("Initializing...");
+    public boolean init() {
+        println("Initializing...");
         try {
             is = new FileInputStream(CONFIG_FILE);
         } catch (FileNotFoundException ex) {
-            return;
+            return false;
         }
 
         try {
             prop.load(is);
         } catch (IOException ex) {
-            return;
+            return false;
         }
 
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
@@ -77,28 +77,29 @@ public class ServerNode {
         _logFileName = prop.getProperty(LOGGING + "file_name", "/var/log/PS-Java-Test.log");
         _loggingLevel = Integer.parseInt(prop.getProperty(LOGGING + "level", "1"));
 
-        print("Hostname is " + _hostname);
-        print("Node Type is " + _nodeType);
-        print("isVolatile is " + _isVolatile);
-        print("Server port is " + _serverPort);
-        print("Message timeout is " + _messageTimeout);
-        print("Ping timeout is " + _pingTimeout);
-        print("Log file name is " + _logFileName);
-        print("Logging Level is " + _loggingLevel);
-        print("isHeadCapable is " + _isHeadCapable);
+        println("Hostname is " + _hostname);
+        println("Node Type is " + _nodeType);
+        println("isVolatile is " + _isVolatile);
+        println("Server port is " + _serverPort);
+        println("Message timeout is " + _messageTimeout);
+        println("Ping timeout is " + _pingTimeout);
+        println("Log file name is " + _logFileName);
+        println("Logging Level is " + _loggingLevel);
+        println("isHeadCapable is " + _isHeadCapable);
 
         _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
 
         _isInitialized = true;
 
+        return true;
     }
 
     public boolean start() throws IOException {
         if(!_isInitialized) {
-            print("Node is not initialized yet. Cannot start.");
+            println("Node is not initialized yet. Cannot start.");
             return false;
         } else {
-            print("Staring Server...");
+            println("Staring Server...");
         }
 
         Thread t1 = new Thread(_server);
