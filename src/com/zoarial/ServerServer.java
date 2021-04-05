@@ -172,7 +172,7 @@ class inSocketWrapper {
     }
 }
 
-public class ServerServer extends Thread {
+public class ServerServer implements Runnable {
 
     boolean close = false;
     
@@ -317,7 +317,7 @@ public class ServerServer extends Thread {
                 }
 
                 println("Sleeping for " + sleepTime + ".");
-                sleep(sleepTime);
+                Thread.sleep(sleepTime);
             } catch (InterruptedException | IOException e) {
                 e.printStackTrace();
             }
@@ -385,7 +385,7 @@ public class ServerServer extends Thread {
         while(!close) {
 
             try {
-                sleep(30000);
+                Thread.sleep(30000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -421,7 +421,7 @@ public class ServerServer extends Thread {
             }
 
             System.out.print((char)arr[i]);
-            // Java doesnt have unsigned bytes
+            // Java doesn't have unsigned bytes
             // Java will sign-extend the byte if >= 128
             // So AND the first byte
             System.out.print("(" + ((int)arr[i] & 0xFF) + ") ");
