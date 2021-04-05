@@ -51,6 +51,14 @@ public class ServerNode extends PrintBaseClass {
             return false;
         }
 
+        if(!prop.getProperty("app.name").equals(APP_NAME)) {
+            println("Given config file is not a Z-IoT config file.");
+            return false;
+        } else if (!prop.getProperty("app.version").equals(CONFIG_VERSION)) {
+            println("Config file is not the correct version");
+            return false;
+        }
+
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
         _nodeType = Integer.parseInt(prop.getProperty(DEVICE + "node_type", "0"));
         _isVolatile = Boolean.parseBoolean(prop.getProperty(DEVICE + "is_volatile", "true"));
