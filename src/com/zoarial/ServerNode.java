@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
+import static com.zoarial.ServerPublic.*;
 
 
 public class ServerNode extends PrintBaseClass {
@@ -30,22 +31,6 @@ public class ServerNode extends PrintBaseClass {
     String _logFileName;
     int _loggingLevel;
 
-    static final int RECV_NODE  =	0;
-    static final int BASIC_NODE = 	1;
-    static final int SATELLITE  =	2;
-
-    static final String APP = "PS-Java-Test";
-    static final String CONFIG_VERSION = "0.0.1";
-
-    static final String PREFIX = "app.";
-    static final String DEVICE = PREFIX + "device.";
-    static final String LOGGING = PREFIX + "logging.";
-
-    static final String CONFIG_FILE = "/etc/PS-Java-Test.config";
-
-    private void print(String str) {
-        System.out.println("ServerNode: " + str);
-    }
 
     public ServerNode() {
         super("ServerNode");
