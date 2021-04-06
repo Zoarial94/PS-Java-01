@@ -31,7 +31,6 @@ class inSocketHelper implements Runnable {
         }
     }
 
-    @Override
     public void run() {
 
     }
@@ -45,11 +44,11 @@ class inSocketHelper implements Runnable {
 class ServerSocketHelper extends PrintBaseClass implements Runnable {
 
     ServerSocket servSocket;
-    DataInputStream in;
-    boolean _running = true;
     boolean close = false;
 
-    ArrayList<Socket> _inSockets = new ArrayList<>();
+    //  Final doesn't mean const
+    //  Final means it can't be reassigned and makes for a good concurrency lock.
+    final ArrayList<Socket> _inSockets = new ArrayList<>();
 
     public ServerSocketHelper(ServerSocket socket) {
         super("ServerSocketHelper");
@@ -57,6 +56,13 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
     }
 
     public void run() {
+        try {
+            //  Set socket timeout so that it can stop blocking and be shutdown, eventually.
+            servSocket.setSoTimeout(10000);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
         while(!close) {
             try {
                 Socket tmp = servSocket.accept();
@@ -64,10 +70,13 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
                     println("Accepting new socket.");
                     _inSockets.add(tmp);
                 }
+            } catch (SocketTimeoutException e) {
+                println("Socked Timeout");
             } catch (IOException ex) {
-
+                ex.printStackTrace();
             }
         }
+        println("Finished Thread");
     }
 
     public Socket getNextSocket() {
@@ -95,13 +104,12 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
 class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
     DatagramSocket _ds;
-    ArrayList<DatagramPacket> queue = new ArrayList<>();
-    boolean newData = false;
+    final ArrayList<DatagramPacket> queue = new ArrayList<>();
     boolean close = false;
     final int BUF_SIZE = 65535;
 
     DatagramSocketHelper(DatagramSocket ds) {
-        super("DatagramSockerHelper");
+        super("DatagramSocketHelper");
         _ds = ds;
     }
 
@@ -109,9 +117,6 @@ class DatagramSocketHelper extends PrintBaseClass implements Runnable {
         close = true;
     }
 
-    public boolean isNewData() {
-        return newData;
-    }
 
     public boolean isNextDataEmpty() {
         return queue.isEmpty();
@@ -133,16 +138,24 @@ class DatagramSocketHelper extends PrintBaseClass implements Runnable {
     public void run() {
 
         println("Starting thread...");
+        try {
+            //  Set socket timeout so the socket will eventually close
+            _ds.setSoTimeout(10000);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
         while(!close) {
             DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
             try {
                 _ds.receive(dp);
+                println("Received packet, adding to queue.");
+                synchronized (queue) {
+                    queue.add(dp);
+                }
+            } catch (SocketTimeoutException e) {
+               println("Socket timeout");
             } catch (IOException e) {
                 e.printStackTrace();
-            }
-            println("Received packet, adding to queue.");
-            synchronized (queue) {
-                queue.add(dp);
             }
         }
         println("Finished thread.");
@@ -169,7 +182,7 @@ class inSocketWrapper {
 
 public class ServerServer extends PrintBaseClass implements Runnable {
 
-    boolean close = false;
+    boolean _close = false;
     
     final String _hostname;
     final int _nodeType;
@@ -187,12 +200,10 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     ArrayList<inSocketWrapper> _inSockets = new ArrayList<>();
 
     DatagramSocket _ds;
-    DatagramPacket _dp;
-    byte[] _dpBuf = new byte[65535];
     DatagramSocketHelper _datagramSocketHelper;
 
 
-    public ServerServer(String hostname, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) {
+    public ServerServer(String hostname, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) throws Exception {
         super("ServerServer");
 
         println("Initializing...");
@@ -206,23 +217,22 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         _messageTimeout = messageTimeout;
         _pingTimeout = pingTimeout;
 
-        Enumeration<NetworkInterface> n = null;
+        Enumeration<NetworkInterface> n;
         try {
             n = NetworkInterface.getNetworkInterfaces();
         } catch (SocketException e) {
             e.printStackTrace();
+            throw new Exception("Failed to get network interfaces.");
         }
         boolean found = false;
         InetAddress tmp = null;
-        for (; n.hasMoreElements() && !found;)
-        {
+        while (n.hasMoreElements() && !found) {
             NetworkInterface e = n.nextElement();
             if(!e.getName().equals("eth0")) {
                 continue;
             }
             Enumeration<InetAddress> a = e.getInetAddresses();
-            for (; a.hasMoreElements() && !found;)
-            {
+            while (a.hasMoreElements() && !found) {
 
                 InetAddress addr = a.nextElement();
                 System.out.println(e.getName() + ":  " + addr.getHostAddress());
@@ -235,6 +245,10 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                     unknownHostException.printStackTrace();
                 }
             }
+        }
+
+        if(tmp == null) {
+            throw new Exception("Unable to find IP address.");
         }
 
         _serverIP = tmp;
@@ -278,7 +292,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
          */
         int sleepTime = 5000;
         DatagramPacket dp;
-        while(!close) {
+        while(!_close) {
             try {
                 /*
                  *
@@ -322,7 +336,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
        //Find head, either by reading from a save file, or a broadcast.
-        while(!close && true) {
+        while(!_close) {
 
             byte[] buf = new byte[32];
             System.arraycopy("ZIoT".getBytes(), 0, buf, 0, 4);
@@ -371,7 +385,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         //Do logic
-        while(!close) {
+        while(!_close) {
 
             try {
                 Thread.sleep(30000);
@@ -409,10 +423,16 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 System.out.print("\n" + prefix);
             }
 
-            System.out.print((char)arr[i]);
+            System.out.print("\t");
+
+            if(Character.isLetterOrDigit(arr[i])) {
+                System.out.print((char) arr[i]);
+            } else {
+                System.out.print("?");
+            }
             // Java doesn't have unsigned bytes
             // Java will sign-extend the byte if >= 128
-            // So AND the first byte
+            // So binary-AND the first byte
             System.out.print("(" + ((int)arr[i] & 0xFF) + ") ");
         }
         System.out.println();
@@ -457,6 +477,12 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     void TCPHandler() {
 
+    }
+
+    public void close() {
+        _close = true;
+        _serverSocketHelper.close();
+        _datagramSocketHelper.close();
     }
 
 }

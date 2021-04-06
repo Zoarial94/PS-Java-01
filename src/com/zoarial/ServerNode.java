@@ -11,6 +11,8 @@ import static com.zoarial.ServerPublic.*;
 
 public class ServerNode extends PrintBaseClass {
 
+    boolean _close = false;
+
     ServerServer _server;
 
     Properties prop = new Properties();
@@ -80,7 +82,13 @@ public class ServerNode extends PrintBaseClass {
         println("Logging Level is " + _loggingLevel);
         println("isHeadCapable is " + _isHeadCapable);
 
-        _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
+        //  May throw
+        try {
+            _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
 
         _isInitialized = true;
 
@@ -99,6 +107,11 @@ public class ServerNode extends PrintBaseClass {
         t1.start();
 
         return true;
+    }
+
+    public void close() {
+        _close = true;
+        _server.close();
     }
 
 }
