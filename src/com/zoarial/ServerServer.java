@@ -5,6 +5,8 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 class inSocketHelper implements Runnable {
     Thread t;
@@ -48,7 +50,7 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
 
     //  Final doesn't mean const
     //  Final means it can't be reassigned and makes for a good concurrency lock.
-    final ArrayList<Socket> _inSockets = new ArrayList<>();
+    final ArrayBlockingQueue<Socket> _queue = new ArrayBlockingQueue<>(32);
 
     public ServerSocketHelper(ServerSocket socket) {
         super("ServerSocketHelper");
@@ -63,15 +65,23 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
             e.printStackTrace();
         }
 
+        Socket tmp = null;
         while(!close) {
             try {
-                Socket tmp = servSocket.accept();
-                synchronized (_inSockets) {
-                    println("Accepting new socket.");
-                    _inSockets.add(tmp);
-                }
+                tmp = servSocket.accept();
+                println("Accepting new socket.");
+                _queue.put(tmp);
             } catch (SocketTimeoutException e) {
                 println("Socked Timeout");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                println("Unable to add socket to queue! Closing and dropping socket...");
+                try {
+                    tmp.close();
+                } catch (IOException ioException) {
+                    ioException.printStackTrace();
+                    println("Something must have gone terribly wrong to get here.");
+                }
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -79,20 +89,41 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
         println("Finished Thread");
     }
 
-    public Socket getNextSocket() {
-        Socket tmp;
-        synchronized (_inSockets) {
-            if (_inSockets.isEmpty()) {
-                return null;
-            }
-            tmp = _inSockets.get(0);
-            _inSockets.remove(0);
-        }
-        return tmp;
-    }
 
     public boolean isNextSocketEmpty() {
-        return _inSockets.isEmpty();
+        return _queue.isEmpty();
+    }
+
+    /*
+     *  Function will not block. If there is no object, then it will return null
+     */
+    public Socket pollNextSocket() {
+        return _queue.poll();
+    }
+
+    /*
+     *  Function will block until the timeout is reached. It will then return null
+     */
+    public Socket pollNextSocket(long timeout, TimeUnit timeUnit) {
+        try {
+            return _queue.poll(timeout, timeUnit);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    /*
+     *  Function will block until an object is retrieved.
+     *  Function could return null if an exception occurs.
+     */
+    public Socket takeNextSocket() {
+        try {
+            return _queue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void close() {
@@ -104,7 +135,7 @@ class ServerSocketHelper extends PrintBaseClass implements Runnable {
 class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
     DatagramSocket _ds;
-    final ArrayList<DatagramPacket> queue = new ArrayList<>();
+    final ArrayBlockingQueue<DatagramPacket> _queue = new ArrayBlockingQueue<>(32);
     boolean close = false;
     final int BUF_SIZE = 65535;
 
@@ -119,20 +150,39 @@ class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
 
     public boolean isNextDataEmpty() {
-        return queue.isEmpty();
+        return _queue.isEmpty();
     }
 
-    public DatagramPacket getNextData() {
-        DatagramPacket tmp;
-        synchronized (queue) {
-            if (queue.isEmpty()) {
-                return null;
-            }
+    /*
+     *  Function will not block. If there is no object, then it will return null
+     */
+    public DatagramPacket pollNextData() {
+        return _queue.poll();
+    }
 
-            tmp = queue.get(0);
-            queue.remove(0);
+    /*
+     *  Function will block until the timeout is reached. It will then return null
+     */
+    public DatagramPacket pollNextData(long timeout, TimeUnit timeUnit) {
+        try {
+            return _queue.poll(timeout, timeUnit);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
-        return tmp;
+        return null;
+    }
+
+    /*
+     *  Function will block until an object is retrieved.
+     *  Function could return null if an exception occurs.
+     */
+    public DatagramPacket takeNextData() {
+        try {
+            return _queue.take();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     public void run() {
@@ -149,18 +199,19 @@ class DatagramSocketHelper extends PrintBaseClass implements Runnable {
             try {
                 _ds.receive(dp);
                 println("Received packet, adding to queue.");
-                synchronized (queue) {
-                    queue.add(dp);
-                }
+                _queue.put(dp);
             } catch (SocketTimeoutException e) {
                println("Socket timeout");
             } catch (IOException e) {
                 e.printStackTrace();
+                println("Something went wrong!");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+                println("Unable to add packet to queue! Dropping packet.");
             }
         }
         println("Finished thread.");
     }
-
 }
 
 class inSocketWrapper {
@@ -195,6 +246,13 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     int _messageTimeout;
     int _pingTimeout;
 
+    /*
+     *
+     *  I use socket helpers which only receive packets/sockets so I can separate the logic to use the packets/sockets elsewhere.
+     *  For example, a head node needs to respond to UDP packets, but a non-head may not want to response, or may want to respond differently.
+     *  For sockets, once they are accepted, they can be assigned to a thread which will handle it accordingly.
+     *
+     */
     ServerSocket _outSocket;
     ServerSocketHelper _serverSocketHelper;
     ArrayList<inSocketWrapper> _inSockets = new ArrayList<>();
@@ -300,7 +358,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                  *
                  */
                 while(!_datagramSocketHelper.isNextDataEmpty()) {
-                    dp = _datagramSocketHelper.getNextData();
+                    dp = _datagramSocketHelper.pollNextData();
                     String str = buildString(dp.getData()).toString();
                     println("Datagram Packet: " + str);
                     HeadUDPHandler(dp);
@@ -312,7 +370,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                  *
                  */
                 while(!_serverSocketHelper.isNextSocketEmpty()) {
-                    _inSockets.add(new inSocketWrapper(_serverSocketHelper.getNextSocket()));
+                    _inSockets.add(new inSocketWrapper(_serverSocketHelper.pollNextSocket()));
                 }
 
                 for(inSocketWrapper socketWrapper : _inSockets) {
