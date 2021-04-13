@@ -32,11 +32,7 @@ public class Main {
 
 
         status = false;
-        try {
-            status = _server.start();
-        } catch(IOException ex) {
-            print("Server start error.");
-        }
+        status = _server.start();
 
         if(status) {
             print("Server successfully started.");

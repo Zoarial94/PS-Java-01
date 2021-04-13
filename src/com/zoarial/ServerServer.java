@@ -1,246 +1,25 @@
 package com.zoarial;
 
+import com.zoarial.threads.*;
+
 import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.TimeUnit;
-
-class inSocketHelper implements Runnable {
-    Thread t;
-    Socket inSocket;
-    PrintWriter out;
-    BufferedReader in;
-    String threadName;
-
-    public inSocketHelper(Socket socket)  throws IOException {
-        inSocket = socket;
-        try {
-            out = new PrintWriter(inSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(inSocket.getInputStream()));
-        } catch(IOException ex) {
-            throw ex;
-        }
-        this.start();
-    }
-
-    private void start() {
-        if(t == null) {
-            t = new Thread(this);
-            t.start();
-        }
-    }
-
-    public void run() {
-
-    }
-}
-
-/*
- *
- * Just accepts new connections in a non-blocking fashion
- *
- */
-class ServerSocketHelper extends PrintBaseClass implements Runnable {
-
-    ServerSocket servSocket;
-    boolean close = false;
-
-    //  Final doesn't mean const
-    //  Final means it can't be reassigned and makes for a good concurrency lock.
-    final ArrayBlockingQueue<Socket> _queue = new ArrayBlockingQueue<>(32);
-
-    public ServerSocketHelper(ServerSocket socket) {
-        super("ServerSocketHelper");
-        this.servSocket = socket;
-    }
-
-    public void run() {
-        try {
-            //  Set socket timeout so that it can stop blocking and be shutdown, eventually.
-            servSocket.setSoTimeout(10000);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-
-        Socket tmp = null;
-        while(!close) {
-            try {
-                tmp = servSocket.accept();
-                println("Accepting new socket.");
-                _queue.put(tmp);
-            } catch (SocketTimeoutException e) {
-                println("Socked Timeout");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                println("Unable to add socket to queue! Closing and dropping socket...");
-                try {
-                    tmp.close();
-                } catch (IOException ioException) {
-                    ioException.printStackTrace();
-                    println("Something must have gone terribly wrong to get here.");
-                }
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-        println("Finished Thread");
-    }
-
-
-    public boolean isNextSocketEmpty() {
-        return _queue.isEmpty();
-    }
-
-    /*
-     *  Function will not block. If there is no object, then it will return null
-     */
-    public Socket pollNextSocket() {
-        return _queue.poll();
-    }
-
-    /*
-     *  Function will block until the timeout is reached. It will then return null
-     */
-    public Socket pollNextSocket(long timeout, TimeUnit timeUnit) {
-        try {
-            return _queue.poll(timeout, timeUnit);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /*
-     *  Function will block until an object is retrieved.
-     *  Function could return null if an exception occurs.
-     */
-    public Socket takeNextSocket() {
-        try {
-            return _queue.take();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public void close() {
-        close = true;
-    }
-
-}
-
-class DatagramSocketHelper extends PrintBaseClass implements Runnable {
-
-    DatagramSocket _ds;
-    final ArrayBlockingQueue<DatagramPacket> _queue = new ArrayBlockingQueue<>(32);
-    boolean close = false;
-    final int BUF_SIZE = 65535;
-
-    DatagramSocketHelper(DatagramSocket ds) {
-        super("DatagramSocketHelper");
-        _ds = ds;
-    }
-
-    public void close() {
-        close = true;
-    }
-
-
-    public boolean isNextDataEmpty() {
-        return _queue.isEmpty();
-    }
-
-    /*
-     *  Function will not block. If there is no object, then it will return null
-     */
-    public DatagramPacket pollNextData() {
-        return _queue.poll();
-    }
-
-    /*
-     *  Function will block until the timeout is reached. It will then return null
-     */
-    public DatagramPacket pollNextData(long timeout, TimeUnit timeUnit) {
-        try {
-            return _queue.poll(timeout, timeUnit);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    /*
-     *  Function will block until an object is retrieved.
-     *  Function could return null if an exception occurs.
-     */
-    public DatagramPacket takeNextData() {
-        try {
-            return _queue.take();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    public void run() {
-
-        println("Starting thread...");
-        try {
-            //  Set socket timeout so the socket will eventually close
-            _ds.setSoTimeout(10000);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        while(!close) {
-            DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
-            try {
-                _ds.receive(dp);
-                println("Received packet, adding to queue.");
-                _queue.put(dp);
-            } catch (SocketTimeoutException e) {
-               println("Socket timeout");
-            } catch (IOException e) {
-                e.printStackTrace();
-                println("Something went wrong!");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                println("Unable to add packet to queue! Dropping packet.");
-            }
-        }
-        println("Finished thread.");
-    }
-}
-
-class inSocketWrapper {
-    public Socket inSocket;
-    public PrintWriter out;
-    public DataInputStream in;
-
-    public inSocketWrapper(Socket socket)  {
-        inSocket = socket;
-        try {
-            out = new PrintWriter(inSocket.getOutputStream(), true);
-            in = new DataInputStream(new BufferedInputStream(inSocket.getInputStream()));
-        } catch (IOException ex) {
-            System.out.println("Something happened while creating inSocketWrapper. Exiting.");
-            System.exit(-1);
-        }
-    }
-}
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class ServerServer extends PrintBaseClass implements Runnable {
 
-    boolean _close = false;
-    
-    final String _hostname;
-    final int _nodeType;
-    final boolean _isVolatile;
-    final int _serverPort;
-    final boolean _isHeadCapable;
-    final InetAddress _serverIP;
+    final private String _hostname;
+    final private int _nodeType;
+    final private boolean _isVolatile;
+    final private int _serverPort;
+    final private boolean _isHeadCapable;
+    final private InetAddress _serverIP;
+
+    final private AtomicBoolean _started = new AtomicBoolean(false);
+    final private AtomicBoolean _close = new AtomicBoolean(false);
 
     //Server can update these at runtime
     int _messageTimeout;
@@ -255,7 +34,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
      */
     ServerSocket _outSocket;
     ServerSocketHelper _serverSocketHelper;
-    ArrayList<inSocketWrapper> _inSockets = new ArrayList<>();
 
     DatagramSocket _ds;
     DatagramSocketHelper _datagramSocketHelper;
@@ -312,30 +90,43 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         _serverIP = tmp;
     }
 
+    /*
+     *
+     * I'm not certain how I want this program to be structured.
+     * For now, I will have ServerServer run as its own thread.
+     * The ServerServer thread will start the Head or Non-Head threads and then stop.
+     * In the future, this behavior may change depending on the needs of the program.
+     *
+     */
     public void run() {
-
-        if(_isHeadCapable) {
-            runHeadCapable();
+        // Try to get the atomic flag. If compareAndSet returns true, then we have the flag and we can start.
+        if (_started.compareAndSet(false, true)) {
+            println("Starting...");
+            if (_isHeadCapable) {
+                runHeadCapable();
+            } else {
+                runNotHeadCapable();
+            }
         } else {
-            runNotHeadCapable();
+            println("Server Already started.");
         }
-        
+
     }
 
     private void runHeadCapable() {
         /*
-         *
          * SETUP
-         *
+         * Create socket helpers, then assign the helpers to the threads.
+         * The socket helpers are thread-safe and can block while the thread waits.
          */
         try {
             println("Starting a server on port " + _serverPort + ".");
             _outSocket = new ServerSocket(_serverPort);
-            _serverSocketHelper = new ServerSocketHelper(_outSocket);
+            _serverSocketHelper = new ServerSocketHelper(this, _outSocket);
             new Thread(_serverSocketHelper).start();
 
             _ds = new DatagramSocket(_serverPort);
-            _datagramSocketHelper = new DatagramSocketHelper(_ds);
+            _datagramSocketHelper = new DatagramSocketHelper(this, _ds);
             new Thread(_datagramSocketHelper).start();
 
         } catch(IOException ex) {
@@ -344,45 +135,11 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         /*
-         *
-         * LOOP
-         *
+         * Start Threads
          */
-        int sleepTime = 5000;
-        DatagramPacket dp;
-        while(!_close) {
-            try {
-                /*
-                 *
-                 * UDP Handler Loop
-                 *
-                 */
-                while(!_datagramSocketHelper.isNextDataEmpty()) {
-                    dp = _datagramSocketHelper.pollNextData();
-                    String str = buildString(dp.getData()).toString();
-                    println("Datagram Packet: " + str);
-                    HeadUDPHandler(dp);
-                }
 
-                /*
-                 *
-                 * TCP Handler Loop
-                 *
-                 */
-                while(!_serverSocketHelper.isNextSocketEmpty()) {
-                    _inSockets.add(new inSocketWrapper(_serverSocketHelper.pollNextSocket()));
-                }
+        new Thread(new HeadUDPThread(this, _datagramSocketHelper)).start();
 
-                for(inSocketWrapper socketWrapper : _inSockets) {
-                    println("Socket Packet: " + socketWrapper.in.readUTF());
-                }
-
-                println("Sleeping for " + sleepTime + ".");
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException | IOException e) {
-                e.printStackTrace();
-            }
-        }
     }
 
     private void runNotHeadCapable() {
@@ -394,7 +151,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
        //Find head, either by reading from a save file, or a broadcast.
-        while(!_close) {
+        while(!_close.getOpaque()) {
 
             byte[] buf = new byte[32];
             System.arraycopy("ZIoT".getBytes(), 0, buf, 0, 4);
@@ -443,7 +200,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         //Do logic
-        while(!_close) {
+        while(!_close.getOpaque()) {
 
             try {
                 Thread.sleep(30000);
@@ -496,51 +253,20 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         System.out.println();
     }
 
-    void HeadUDPHandler(DatagramPacket dp) {
-
-        byte[] data = dp.getData();
-        if(new String(data, 0, 4).equals("ZIoT")) {
-            println("Is Z-IoT Packet.");
-        } else {
-            println("Is not Z-IoT packet.");
-            return;
-        }
-
-        int node = data[7];
-        String hostname = new String(data, 8, 24);
-
-        println("Node type is: " + node);
-        println("Hostname is: " + hostname);
-
-        byte[] response = new byte[16];
-        System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
-
-        System.arraycopy(_serverIP.getAddress(), 0, response, 4, 4);
-
-
-        DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _serverPort);
-
-
-        try {
-            _ds.send(dpResponse);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public InetAddress getIP() {
+        return _serverIP;
     }
 
-    void NonHeadUDPHandler(DatagramPacket dp) {
-
-    }
-
-    void TCPHandler() {
-
+    public int getPort() {
+        return _serverPort;
     }
 
     public void close() {
-        _close = true;
-        _serverSocketHelper.close();
-        _datagramSocketHelper.close();
+        _close.setOpaque(true);
+    }
+
+    public boolean isClosed() {
+        return _close.getOpaque();
     }
 
 }

@@ -40,6 +40,10 @@ public class ServerNode extends PrintBaseClass {
     }
 
     public boolean init() {
+        if(_isInitialized) {
+            println("Already initialized.");
+            return false;
+        }
         println("Initializing...");
         try {
             is = new FileInputStream(CONFIG_FILE);
@@ -95,7 +99,7 @@ public class ServerNode extends PrintBaseClass {
         return true;
     }
 
-    public boolean start() throws IOException {
+    public boolean start() {
         if(!_isInitialized) {
             println("Node is not initialized yet. Cannot start.");
             return false;

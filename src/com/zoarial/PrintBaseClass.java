@@ -21,9 +21,10 @@ public abstract class PrintBaseClass {
     public static final String ANSI_WHITE_BACKGROUND = "\u001B[47m";
 
     String prefix;
-    PrintBaseClass(String str) {
+    public PrintBaseClass(String str) {
         prefix = str;
     }
+
     protected <T> void println(T var) {
         System.out.print(ANSI_BLUE + prefix + ANSI_RESET + ": ");
         System.out.println(var);
