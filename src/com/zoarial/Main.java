@@ -1,11 +1,9 @@
 package com.zoarial;
 
-import java.io.IOException;
-
 public class Main {
     static ServerNode _server;
 
-    static void print(String str) {
+    static void println(String str) {
         System.out.println("Main: " + str);
     }
 
@@ -35,9 +33,9 @@ public class Main {
         status = _server.start();
 
         if(status) {
-            print("Server successfully started.");
+            println("Server successfully started.");
         } else {
-            print("Server failed to start.");
+            println("Server failed to start.");
             return;
         }
 
@@ -48,6 +46,7 @@ public class Main {
             e.printStackTrace();
         }
         _server.close();
-        print("Main is finished.");
+        println("Main is finished.");
+        println("Waiting for other threads to finish.");
     }
 }

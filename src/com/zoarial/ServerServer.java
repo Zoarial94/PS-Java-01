@@ -4,8 +4,6 @@ import com.zoarial.threads.*;
 
 import java.io.*;
 import java.net.*;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -146,69 +144,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
         try {
             _ds = new DatagramSocket(_serverPort);
+            _datagramSocketHelper = new DatagramSocketHelper(this, _ds);
+            new Thread(_datagramSocketHelper).start();
         } catch (SocketException e) {
             e.printStackTrace();
         }
 
-       //Find head, either by reading from a save file, or a broadcast.
-        while(!_close.getOpaque()) {
+        new Thread(new NonHeadUDPThread(this, _datagramSocketHelper));
 
-            byte[] buf = new byte[32];
-            System.arraycopy("ZIoT".getBytes(), 0, buf, 0, 4);
-            buf[7] = (byte)_nodeType;
-            System.arraycopy(_hostname.getBytes(), 0, buf, 8, Math.min(24, _hostname.length()));
-
-            //printArray(buf);
-
-            byte[] addr = {10, 94, 50, (byte) 146};
-            println("Sending packet...");
-            DatagramPacket dp;
-            try {
-                dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _serverPort);
-                _ds.send(dp);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
-            dp = new DatagramPacket(new byte[65535], 65535);
-            try {
-                println("Waiting for response...");
-                _ds.setSoTimeout(30000);
-                _ds.receive(dp);
-                byte[] data = dp.getData();
-                if(new String(data, 0, 4).equals("ZIoT")) {
-                    println("Packet is Z-IoT");
-                }
-                println("Length: " + dp.getLength());
-
-                InetAddress[] headAddrs = { InetAddress.getByAddress(Arrays.copyOfRange(data, 4, 8)),
-                                            InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
-                                            InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
-
-                printArray(data, dp.getLength());
-
-                for(InetAddress i : headAddrs) {
-                    printArray(i.getAddress());
-                }
-
-
-
-            } catch (IOException e) {
-                //e.printStackTrace();
-            }
-
-        }
-
-        //Do logic
-        while(!_close.getOpaque()) {
-
-            try {
-                Thread.sleep(30000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-
-        }
     }
 
     public static StringBuilder buildString(byte[] a)
@@ -225,11 +168,11 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         return ret;
     }
 
-    static void printArray(byte[] arr) {
+    public static void printArray(byte[] arr) {
         printArray(arr, arr.length);
     }
 
-    static void printArray(byte[] arr, int len) {
+    public static void printArray(byte[] arr, int len) {
         String prefix = "Array: ";
         for(int i = 0; i < len; i++) {
             if(i == 0) {
@@ -259,6 +202,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     public int getPort() {
         return _serverPort;
+    }
+
+    public int getNodeType() {
+        return _nodeType;
+    }
+
+    public String getHostname() {
+        return _hostname;
     }
 
     public void close() {
