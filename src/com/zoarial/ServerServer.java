@@ -150,7 +150,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             e.printStackTrace();
         }
 
-        new Thread(new NonHeadUDPThread(this, _datagramSocketHelper));
+        new Thread(new NonHeadUDPThread(this, _datagramSocketHelper)).start();
 
     }
 

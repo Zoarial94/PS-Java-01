@@ -36,6 +36,7 @@ public class NonHeadUDPThread extends PrintBaseClass implements Runnable {
     }
 
     private void initialize() {
+        println("Initializing...");
         //Find head, either by reading from a save file, or a broadcast.
         while(!_server.isClosed()) {
 
