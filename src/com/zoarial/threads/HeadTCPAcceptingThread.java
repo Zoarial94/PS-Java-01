@@ -3,11 +3,10 @@ package com.zoarial.threads;
 import com.zoarial.PrintBaseClass;
 import com.zoarial.ServerServer;
 
-import java.io.IOException;
-import java.net.DatagramPacket;
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
     private final ServerServer _server;
@@ -27,6 +26,7 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
         // The accepting thread will start a thread for each socket.
         if(_started.compareAndSet(false, true)) {
             // We acquired the lock, start the thread.
+            println("Starting...");
             loop();
         } else {
             println("A thread has already started. Not starting.");
@@ -37,26 +37,17 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
      * LOOP
      */
     private void loop() {
-        int sleepTime = 5000;
-        DatagramPacket dp;
         while(!_server.isClosed()) {
-            try {
-                /*
-                 * TCP Handler Loop
-                 */
-                while(!_serverSocketHelper.isNextSocketEmpty()) {
-                    _inSockets.add(new inSocketWrapper(_serverSocketHelper.pollNextSocket()));
-                }
-
-                for(inSocketWrapper socketWrapper : _inSockets) {
-                    println("Socket Packet: " + socketWrapper.in.readUTF());
-                }
-
-                println("Sleeping for " + sleepTime + ".");
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException | IOException e) {
-                e.printStackTrace();
+            /*
+             * TCP Handler Loop
+             */
+            Socket socket = _serverSocketHelper.pollNextSocket(10, TimeUnit.SECONDS);
+            if(socket == null) {
+                continue;
             }
+
+            new Thread(new HeadTCPThread(_server, new inSocketWrapper(socket))).start();
+
         }
 
     }

@@ -4,8 +4,15 @@ import com.zoarial.threads.*;
 
 import java.io.*;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Stream;
 
 public class ServerServer extends PrintBaseClass implements Runnable {
 
@@ -15,9 +22,13 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     final private int _serverPort;
     final private boolean _isHeadCapable;
     final private InetAddress _serverIP;
+    final private UUID _uuid = UUID.randomUUID();
 
     final private AtomicBoolean _started = new AtomicBoolean(false);
     final private AtomicBoolean _close = new AtomicBoolean(false);
+
+    final private ArrayList<IoTAction> listOfActions = new ArrayList<>(10);
+    private long startTime;
 
     //Server can update these at runtime
     int _messageTimeout;
@@ -85,6 +96,9 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             throw new Exception("Unable to find IP address.");
         }
 
+        // Generate the IoTActions list so we can know what we can do
+        generateIoTActions();
+
         _serverIP = tmp;
     }
 
@@ -100,6 +114,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         // Try to get the atomic flag. If compareAndSet returns true, then we have the flag and we can start.
         if (_started.compareAndSet(false, true)) {
             println("Starting...");
+            startTime = System.currentTimeMillis();
             if (_isHeadCapable) {
                 runHeadCapable();
             } else {
@@ -137,6 +152,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
          */
 
         new Thread(new HeadUDPThread(this, _datagramSocketHelper)).start();
+        new Thread(new HeadTCPAcceptingThread(this, _serverSocketHelper)).start();
 
     }
 
@@ -151,6 +167,71 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         new Thread(new NonHeadUDPThread(this, _datagramSocketHelper)).start();
+
+    }
+
+    private void generateIoTActions() {
+
+        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, 0, ()-> {
+            System.exit(0);
+            return "";
+        }));
+        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, 0, ()-> {
+            System.exit(0);
+            return "";
+        }));
+        listOfActions.add(new JavaIoTAction("GetUptime", UUID.randomUUID(), (byte)4, 0, ()-> {
+            return String.valueOf(System.currentTimeMillis() - startTime);
+        }));
+
+        // For now, assume we are always on linux.
+        Path rootDir = Paths.get("/etc/ZoarialIoT");
+        Path scriptDir = Paths.get("/etc/ZoarialIoT/scripts");
+        Stream<Path> listOfScripts;
+
+        // Check for things
+        if(!Files.isDirectory(rootDir)) {
+            println("Root directory does not exist.");
+            return;
+        }
+        if(!Files.isDirectory(scriptDir)) {
+            println("Script directory does not exist.");
+            // If there is no script dir, then we can't create any actions.
+            return;
+        }
+
+        // Try to generate the list
+        try {
+            listOfScripts = Files.list(scriptDir);
+            println("Found files: ");
+            listOfScripts.filter(file -> {
+                try {
+                    boolean b = Files.getOwner(file).getName().equals("hwhite") &&
+                                Files.isRegularFile(file) &&
+                                Files.isReadable(file) &&
+                                Files.isExecutable(file) &&
+                                !Files.isSymbolicLink(file);
+                    if(!b) {
+                        println("Something is wrong with the permissions/file.");
+                    }
+                    return b;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }).forEach(file->{
+                String fileName = file.getFileName().toString();
+                println("Adding " + fileName);
+                // By default use highest security level
+                // Security level should be changed manually by user though other means. (Saved to database)
+                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, 0, file);
+                println(action);
+                listOfActions.add(action);
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
     }
 
@@ -194,6 +275,21 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             System.out.print("(" + ((int)arr[i] & 0xFF) + ") ");
         }
         System.out.println();
+    }
+
+    public ArrayList<IoTAction> getListOfActions() {
+        return listOfActions;
+    }
+
+    public static Character[] getNetworkResponse(List<IoTPacketSection> sections) {
+        ArrayList<Character> byteList = new ArrayList<>(sections.size() * 32);
+
+        for(IoTPacketSection section : sections) {
+            byteList.addAll(section.getByteList());
+            byteList.add((char)0);
+        }
+
+        return (Character[]) byteList.toArray();
     }
 
     public InetAddress getIP() {
