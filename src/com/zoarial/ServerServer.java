@@ -281,15 +281,22 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         return listOfActions;
     }
 
-    public static Character[] getNetworkResponse(List<IoTPacketSection> sections) {
-        ArrayList<Character> byteList = new ArrayList<>(sections.size() * 32);
+    public static byte[] getNetworkResponse(List<IoTPacketSection> sections) {
+        byte[] fullBytesArr;
+        int len = 0;
 
         for(IoTPacketSection section : sections) {
-            byteList.addAll(section.getByteList());
-            byteList.add((char)0);
+            len += section.getByteList().length;
         }
 
-        return (Character[]) byteList.toArray();
+        fullBytesArr = new byte[len];
+        len = 0;
+        for(IoTPacketSection section : sections) {
+            System.arraycopy(section.getByteList(), 0, fullBytesArr, len, section.getByteList().length);
+            len += section.getByteList().length;
+        }
+
+        return fullBytesArr;
     }
 
     public InetAddress getIP() {

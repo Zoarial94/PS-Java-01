@@ -53,7 +53,7 @@ public class IoTPacketSection {
         str = "";
     }
 
-    public List<Character> getByteList() {
+    public byte[] getByteList() {
         byte[] byteArr;
         switch (type) {
             case CHAR:
@@ -74,11 +74,7 @@ public class IoTPacketSection {
             default:
                 byteArr = new byte[0];
         }
-        ArrayList<Character> charList = new ArrayList<>(byteArr.length);
-        for(byte b : byteArr) {
-            charList.add((char)b);
-        }
-        return charList;
+        return byteArr;
     }
 
 }
