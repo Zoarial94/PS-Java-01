@@ -1,33 +1,39 @@
 package com.zoarial;
 
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-enum PacketSectionType {
-    STRING,
-    INTEGER,
-    CHAR,
-    LONG,
-    UUID,
-}
 public class IoTPacketSection {
+    enum PacketSectionType {
+        STRING,
+        INTEGER,
+        BYTE,
+        LONG,
+        UUID,
+        HEADER,
+    }
     final private PacketSectionType type;
     final private String str;
     final private long num;
     final private long uuid_low;
 
     public IoTPacketSection(String str) {
-        type = PacketSectionType.STRING;
+        if (str.equals("ZIoT")) {
+            type = PacketSectionType.HEADER;
+        } else {
+            type = PacketSectionType.STRING;
+        }
         this.str = str;
         num = 0;
         uuid_low = 0;
     }
 
-    public IoTPacketSection(char c) {
-        type = PacketSectionType.CHAR;
-        num = ((int)c) & 0xFF;
+    public IoTPacketSection(byte b) {
+        type = PacketSectionType.BYTE;
+        num = (int)b & 0xFF;
         uuid_low = 0;
         str = "";
     }
@@ -56,7 +62,7 @@ public class IoTPacketSection {
     public byte[] getByteList() {
         byte[] byteArr;
         switch (type) {
-            case CHAR:
+            case BYTE:
                 byteArr =  new byte[] {(byte)num};
                 break;
             case LONG:
@@ -66,15 +72,26 @@ public class IoTPacketSection {
                 byteArr =  ByteBuffer.allocate(16).putLong(num).putLong(uuid_low).array();
                 break;
             case STRING:
-                byteArr =  str.getBytes();
+                byte[] strArr = str.getBytes();
+                int len = strArr.length;
+                byteArr = new byte[strArr.length+1];
+                System.arraycopy(strArr, 0, byteArr, 0, len);
+                byteArr[len] = 0; // Set null byte
                 break;
             case INTEGER:
                 byteArr =  ByteBuffer.allocate(4).putInt((int)num).array();
+                break;
+            case HEADER:
+                byteArr = str.getBytes();
                 break;
             default:
                 byteArr = new byte[0];
         }
         return byteArr;
+    }
+
+    public PacketSectionType getType() {
+        return type;
     }
 
 }

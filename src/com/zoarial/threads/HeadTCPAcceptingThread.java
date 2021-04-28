@@ -18,7 +18,6 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
         super("HeadTCPAcceptingThread");
         _serverSocketHelper = _helper;
         _server = server;
-
     }
 
     public void run() {
@@ -27,7 +26,14 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
         if(_started.compareAndSet(false, true)) {
             // We acquired the lock, start the thread.
             println("Starting...");
+
+            // Start
             loop();
+
+            // Since the server is closing, interrupt all created threads (That are still running)
+            for(Thread t : HeadTCPThread.getThreads()) {
+                t.interrupt();
+            }
         } else {
             println("A thread has already started. Not starting.");
         }
@@ -41,11 +47,13 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
             /*
              * TCP Handler Loop
              */
-            Socket socket = _serverSocketHelper.pollNextSocket(10, TimeUnit.SECONDS);
+            Socket socket = _serverSocketHelper.pollNextSocket();
             if(socket == null) {
                 continue;
             }
 
+            // HeadTCPThread manages its own threads list.
+            // Since they come and go, it is easier to let each thread add/remove itself
             new Thread(new HeadTCPThread(_server, new inSocketWrapper(socket))).start();
 
         }

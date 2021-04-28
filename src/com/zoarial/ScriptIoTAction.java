@@ -7,7 +7,7 @@ import java.util.UUID;
 public class ScriptIoTAction extends IoTAction {
     Path path;
 
-    public ScriptIoTAction(String name, UUID uuid, byte level, int args, Path file) {
+    public ScriptIoTAction(String name, UUID uuid, byte level, byte args, Path file) {
         super(name, uuid, level, args);
         path = file;
 

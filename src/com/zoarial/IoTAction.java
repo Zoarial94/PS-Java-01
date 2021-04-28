@@ -4,9 +4,9 @@ import java.util.List;
 import java.util.UUID;
 
 public abstract class IoTAction {
-    private String actionName;
-    private String description;
-    private UUID actionUuid;
+    private final String actionName;
+    private final String description = "";
+    private final UUID actionUuid;
 
     // Default, anyone with the right level can use.
     private boolean allowByDefault = true;
@@ -24,10 +24,10 @@ public abstract class IoTAction {
      * Level 4 is the same as level 2, but communication needs to be encrypted.
      * Level 10 means only the local machine can run it.
      */
-    private byte actionSecurityLevel;
-    private int arguments;
+    private final byte actionSecurityLevel;
+    private final byte arguments;
 
-    protected IoTAction(String name, UUID uuid, byte level, int arguments) {
+    protected IoTAction(String name, UUID uuid, byte level, byte arguments) {
         actionName = name;
         actionUuid = uuid;
         actionSecurityLevel = level;
@@ -57,7 +57,7 @@ public abstract class IoTAction {
         return actionSecurityLevel;
     }
 
-    public int getNumberOfArguments() {
+    public byte getNumberOfArguments() {
         return arguments;
     }
 

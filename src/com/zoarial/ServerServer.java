@@ -7,10 +7,7 @@ import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
@@ -27,6 +24,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     final private AtomicBoolean _started = new AtomicBoolean(false);
     final private AtomicBoolean _close = new AtomicBoolean(false);
 
+    final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     final private ArrayList<IoTAction> listOfActions = new ArrayList<>(10);
     private long startTime;
 
@@ -41,10 +39,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
      *  For sockets, once they are accepted, they can be assigned to a thread which will handle it accordingly.
      *
      */
-    ServerSocket _outSocket;
     ServerSocketHelper _serverSocketHelper;
 
-    DatagramSocket _ds;
     DatagramSocketHelper _datagramSocketHelper;
 
 
@@ -134,13 +130,12 @@ public class ServerServer extends PrintBaseClass implements Runnable {
          */
         try {
             println("Starting a server on port " + _serverPort + ".");
-            _outSocket = new ServerSocket(_serverPort);
-            _serverSocketHelper = new ServerSocketHelper(this, _outSocket);
-            new Thread(_serverSocketHelper).start();
 
-            _ds = new DatagramSocket(_serverPort);
-            _datagramSocketHelper = new DatagramSocketHelper(this, _ds);
-            new Thread(_datagramSocketHelper).start();
+            _serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(_serverPort));
+            createAndStartNewThread(_serverSocketHelper);
+
+            _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
+            createAndStartNewThread(_datagramSocketHelper);
 
         } catch(IOException ex) {
             System.out.println("Something happened when starting the server. Exiting.");
@@ -151,36 +146,36 @@ public class ServerServer extends PrintBaseClass implements Runnable {
          * Start Threads
          */
 
-        new Thread(new HeadUDPThread(this, _datagramSocketHelper)).start();
-        new Thread(new HeadTCPAcceptingThread(this, _serverSocketHelper)).start();
+        createAndStartNewThread(new HeadUDPThread(this, _datagramSocketHelper));
+        createAndStartNewThread(new HeadTCPAcceptingThread(this, _serverSocketHelper));
 
     }
 
     private void runNotHeadCapable() {
 
         try {
-            _ds = new DatagramSocket(_serverPort);
-            _datagramSocketHelper = new DatagramSocketHelper(this, _ds);
-            new Thread(_datagramSocketHelper).start();
+            _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
+            createAndStartNewThread(_datagramSocketHelper);
         } catch (SocketException e) {
             e.printStackTrace();
         }
 
-        new Thread(new NonHeadUDPThread(this, _datagramSocketHelper)).start();
+        createAndStartNewThread(new NonHeadUDPThread(this, _datagramSocketHelper));
+        //new Thread(new NonHeadTCPThread(this, ))
 
     }
 
     private void generateIoTActions() {
 
-        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, 0, ()-> {
+        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, (byte)0, ()-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, 0, ()-> {
+        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, (byte)0, ()-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("GetUptime", UUID.randomUUID(), (byte)4, 0, ()-> {
+        listOfActions.add(new JavaIoTAction("GetUptime", UUID.randomUUID(), (byte)4, (byte)0, ()-> {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
 
@@ -224,7 +219,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 println("Adding " + fileName);
                 // By default use highest security level
                 // Security level should be changed manually by user though other means. (Saved to database)
-                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, 0, file);
+                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, (byte) 0, file);
                 println(action);
                 listOfActions.add(action);
             });
@@ -233,6 +228,12 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
 
+    }
+
+    private void createAndStartNewThread(Runnable runnable) {
+        Thread t = new Thread(runnable);
+        t.start();
+        threads.add(t);
     }
 
     public static StringBuilder buildString(byte[] a)
@@ -316,7 +317,36 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public void close() {
+        close(false);
+    }
+    public void close(boolean join) {
+        // Mark the server as closed
         _close.setOpaque(true);
+
+        // Close original sockets
+        if(!_datagramSocketHelper.isClosed()) {
+            _datagramSocketHelper.close();
+        }
+        if(!_serverSocketHelper.isClosed()) {
+            _serverSocketHelper.close();
+        }
+
+        // Close all daughter threads. (Those started with the helper function at least)
+        for(Thread t : threads) {
+            if(t.isAlive() && !t.isInterrupted()) {
+                t.interrupt();
+            }
+        }
+
+        if(join) {
+            for (Thread t : threads) {
+                try {
+                    t.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     public boolean isClosed() {

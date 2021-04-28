@@ -40,7 +40,12 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
      *  Function will block until the timeout is reached. It will then return null
      */
     public DatagramPacket pollNextData(long timeout, TimeUnit timeUnit) throws InterruptedException {
-        return _queue.poll(timeout, timeUnit);
+        try {
+            return _queue.poll(timeout, timeUnit);
+        } catch (InterruptedException ex) {
+            println("Interrupted, returning null.");
+        }
+        return null;
     }
 
     /*
@@ -51,7 +56,7 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
         try {
             return _queue.take();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            println("Interrupted, returning null.");
         }
         return null;
     }
@@ -59,33 +64,34 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
     public void run() {
 
         println("Starting thread...");
-        try {
-            //  Set socket timeout so the socket will eventually close
-            _ds.setSoTimeout(10000);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-        while(!_server.isClosed()) {
+
+        while(!_server.isClosed() && !_ds.isClosed()) {
             DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
             try {
                 _ds.receive(dp);
                 println("Received packet, adding to queue.");
                 _queue.put(dp);
-            } catch (SocketTimeoutException e) {
-                //println("Socket timeout");
+            } catch (SocketException | InterruptedException ex){
+                println("Interrupted, the server must be closing.");
             } catch (IOException e) {
                 e.printStackTrace();
                 println("Something went wrong!");
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                println("Unable to add packet to queue! Dropping packet.");
             }
         }
+        // If _server is closed, then DatagramSocket is already closed
         println("Finished thread.");
     }
 
     void send(DatagramPacket dp) throws IOException {
         _ds.send(dp);
+    }
+
+    public boolean isClosed() {
+        return _ds.isClosed();
+    }
+
+    public void close() {
+        _ds.close();
     }
 
 }

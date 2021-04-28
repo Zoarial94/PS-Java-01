@@ -40,6 +40,7 @@ public class Main {
         }
 
 
+        /*
         try {
             Thread.sleep(30000);
         } catch (InterruptedException e) {
@@ -48,5 +49,6 @@ public class Main {
         _server.close();
         println("Main is finished.");
         println("Waiting for other threads to finish.");
+         */
     }
 }
