@@ -11,6 +11,7 @@ public class IoTPacketSection {
         LONG,
         UUID,
         HEADER,
+        BOOLEAN,
     }
     final private PacketSectionType type;
     final private String str;
@@ -56,35 +57,29 @@ public class IoTPacketSection {
         str = "";
     }
 
+    public IoTPacketSection(boolean b) {
+        type = PacketSectionType.BOOLEAN;
+        num = 0;
+        uuid_low = 0;
+        str = b ? "true" : "false";
+    }
+
     public byte[] getByteList() {
-        byte[] byteArr;
-        switch (type) {
-            case BYTE:
-                byteArr =  new byte[] {(byte)num};
-                break;
-            case LONG:
-                byteArr =  ByteBuffer.allocate(8).putLong(num).array();
-                break;
-            case UUID:
-                byteArr =  ByteBuffer.allocate(16).putLong(num).putLong(uuid_low).array();
-                break;
-            case STRING:
+        return switch (type) {
+            case BYTE -> new byte[]{(byte) num};
+            case LONG -> ByteBuffer.allocate(8).putLong(num).array();
+            case UUID -> ByteBuffer.allocate(16).putLong(num).putLong(uuid_low).array();
+            case BOOLEAN, STRING -> {
                 byte[] strArr = str.getBytes();
                 int len = strArr.length;
-                byteArr = new byte[strArr.length+1];
+                byte[] byteArr = new byte[strArr.length + 1];
                 System.arraycopy(strArr, 0, byteArr, 0, len);
                 byteArr[len] = 0; // Set null byte
-                break;
-            case INTEGER:
-                byteArr =  ByteBuffer.allocate(4).putInt((int)num).array();
-                break;
-            case HEADER:
-                byteArr = str.getBytes();
-                break;
-            default:
-                byteArr = new byte[0];
-        }
-        return byteArr;
+                yield byteArr;
+            }
+            case INTEGER -> ByteBuffer.allocate(4).putInt((int) num).array();
+            case HEADER -> str.getBytes();
+        };
     }
 
     public PacketSectionType getType() {

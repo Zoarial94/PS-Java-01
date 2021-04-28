@@ -2,7 +2,6 @@ package com.zoarial.iot;
 
 import com.zoarial.*;
 import com.zoarial.iot.models.IoTAction;
-import com.zoarial.iot.models.IoTPacketSection;
 import com.zoarial.iot.models.JavaIoTAction;
 import com.zoarial.iot.models.ScriptIoTAction;
 import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
@@ -307,6 +306,10 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         return _hostname;
     }
 
+    public UUID getUUID() {
+        return _uuid;
+    }
+
     public void close() {
         close(false);
     }
@@ -342,6 +345,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     public boolean isClosed() {
         return _close.getOpaque();
+    }
+
+    public boolean isVolatile() {
+        return _isVolatile;
+    }
+
+    public boolean isHeadCapable() {
+        return _isHeadCapable;
     }
 
 }

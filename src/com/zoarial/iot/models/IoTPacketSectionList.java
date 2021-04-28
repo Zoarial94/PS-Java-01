@@ -18,6 +18,10 @@ public class IoTPacketSectionList extends ArrayList<IoTPacketSection> {
         super.add(new IoTPacketSection(str));
     }
 
+    public void add(boolean b) {
+        super.add(new IoTPacketSection(b));
+    }
+
     public void add(int i) {
         super.add(new IoTPacketSection(i));
     }

@@ -126,6 +126,14 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
         return str.toString();
     }
 
+    private void respondToSession(IoTSession session,  IoTPacketSectionList sectionList) {
+        try {
+            _inSocket.out.write(sectionList.getNetworkResponse());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void respondToSession(IoTSession session, String str) {
         println("Responding: " + str);
         IoTPacketSectionList sectionList = new IoTPacketSectionList();
