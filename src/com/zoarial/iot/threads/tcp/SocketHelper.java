@@ -1,14 +1,14 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.tcp;
 
 import java.io.*;
 import java.net.Socket;
 
-class inSocketWrapper {
+class SocketHelper {
     public final Socket inSocket;
     public final DataOutputStream out;
     public final DataInputStream in;
 
-    public inSocketWrapper(Socket socket) {
+    public SocketHelper(Socket socket) {
         inSocket = socket;
         DataOutputStream tempOut = null;
         DataInputStream tempIn = null;
@@ -22,4 +22,15 @@ class inSocketWrapper {
         out = tempOut;
         in = tempIn;
     }
+
+    public boolean isClosed() {
+        return inSocket.isClosed();
+    }
+
+    public void close() throws IOException {
+        out.close();
+        in.close();
+        inSocket.close();
+    }
+
 }

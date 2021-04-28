@@ -1,9 +1,6 @@
-package com.zoarial;
+package com.zoarial.iot.models;
 
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public class IoTPacketSection {

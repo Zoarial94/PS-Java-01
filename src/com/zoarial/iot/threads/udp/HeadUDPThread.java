@@ -1,16 +1,11 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.ServerServer;
+import com.zoarial.iot.ServerServer;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /*

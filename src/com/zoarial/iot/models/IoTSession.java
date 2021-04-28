@@ -1,4 +1,4 @@
-package com.zoarial;
+package com.zoarial.iot.models;
 
 public class IoTSession {
     private final int sessionID;

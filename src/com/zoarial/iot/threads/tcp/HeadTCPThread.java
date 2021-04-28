@@ -1,6 +1,11 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.*;
+import com.zoarial.iot.models.IoTAction;
+import com.zoarial.iot.ServerServer;
+import com.zoarial.iot.models.IoTPacketSection;
+import com.zoarial.iot.models.IoTPacketSectionList;
+import com.zoarial.iot.models.IoTSession;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -18,9 +23,9 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
     HashMap<Integer, IoTSession> sessions = new HashMap<>();
     private static final char NULL_BYTE = 0;
 
-    inSocketWrapper _inSocket;
+    SocketHelper _inSocket;
 
-    public HeadTCPThread(ServerServer server, inSocketWrapper inSocket) {
+    public HeadTCPThread(ServerServer server, SocketHelper inSocket) {
         super("HeadTCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
         _server = server;
@@ -116,12 +121,12 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
 
     private void respondToSession(IoTSession session, String str) {
         println("Responding: " + str);
-        ArrayList<IoTPacketSection> sectionList = new ArrayList<>(4);
-        sectionList.add(new IoTPacketSection("ZIoT"));
-        sectionList.add(new IoTPacketSection(session.getSessionID()));
-        sectionList.add(new IoTPacketSection(str));
+        IoTPacketSectionList sectionList = new IoTPacketSectionList();
+        sectionList.add("ZIoT");
+        sectionList.add(session.getSessionID());
+        sectionList.add(str);
         try {
-            _inSocket.out.write(ServerServer.getNetworkResponse(sectionList));
+            _inSocket.out.write(sectionList.getNetworkResponse());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -129,21 +134,21 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
 
     private void respondActionList(IoTSession session) {
         var actionList = _server.getListOfActions();
-        ArrayList<IoTPacketSection> sectionList = new ArrayList<>(actionList.size() * 4 + 3);
+        IoTPacketSectionList sectionList = new IoTPacketSectionList(actionList.size() * 4 + 3);
 
-        sectionList.add(new IoTPacketSection("ZIoT"));
-        sectionList.add(new IoTPacketSection(session.getSessionID()));
-        sectionList.add(new IoTPacketSection(actionList.size()));
+        sectionList.add("ZIoT");
+        sectionList.add(session.getSessionID());
+        sectionList.add(actionList.size());
 
         for(IoTAction action : actionList) {
-            sectionList.add(new IoTPacketSection(action.getUUID()));
-            sectionList.add(new IoTPacketSection(action.getName()));
-            sectionList.add(new IoTPacketSection(action.getSecurityLevel()));
-            sectionList.add(new IoTPacketSection(action.getNumberOfArguments()));
+            sectionList.add(action.getUUID());
+            sectionList.add(action.getName());
+            sectionList.add(action.getSecurityLevel());
+            sectionList.add(action.getNumberOfArguments());
         }
 
         try {
-            _inSocket.out.write(ServerServer.getNetworkResponse(sectionList));
+            _inSocket.out.write(sectionList.getNetworkResponse());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -156,11 +161,8 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
 
     private void cleanup() {
         try {
-            if(!_inSocket.inSocket.isClosed()) {
-                _inSocket.out.flush();
-                _inSocket.out.close(); // Flushes and closes
-                _inSocket.in.close();
-                _inSocket.inSocket.close(); // May be redundant. Unsure.
+            if(!_inSocket.isClosed()) {
+                _inSocket.close();
             }
         } catch (IOException e) {
             e.printStackTrace();

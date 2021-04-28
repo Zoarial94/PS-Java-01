@@ -1,4 +1,6 @@
-package com.zoarial;
+package com.zoarial.iot;
+
+import com.zoarial.PrintBaseClass;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -6,7 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
 
-import static com.zoarial.ServerPublic.*;
+import static com.zoarial.iot.ServerPublic.*;
 
 
 public class ServerNode extends PrintBaseClass {

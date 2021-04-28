@@ -1,18 +1,17 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.ServerServer;
+import com.zoarial.iot.ServerServer;
 
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
     private final ServerServer _server;
     private static final AtomicBoolean _started = new AtomicBoolean(false);
     private final ServerSocketHelper _serverSocketHelper;
-    ArrayList<inSocketWrapper> _inSockets = new ArrayList<>();
+    ArrayList<SocketHelper> _inSockets = new ArrayList<>();
 
     public HeadTCPAcceptingThread(ServerServer server, ServerSocketHelper _helper) {
         super("HeadTCPAcceptingThread");
@@ -47,14 +46,14 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
             /*
              * TCP Handler Loop
              */
-            Socket socket = _serverSocketHelper.pollNextSocket();
+            Socket socket = _serverSocketHelper.takeNextSocket();
             if(socket == null) {
                 continue;
             }
 
             // HeadTCPThread manages its own threads list.
             // Since they come and go, it is easier to let each thread add/remove itself
-            new Thread(new HeadTCPThread(_server, new inSocketWrapper(socket))).start();
+            new Thread(new HeadTCPThread(_server, new SocketHelper(socket))).start();
 
         }
 

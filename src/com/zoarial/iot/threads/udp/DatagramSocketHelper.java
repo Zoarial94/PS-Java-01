@@ -1,13 +1,12 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.ServerServer;
+import com.zoarial.iot.ServerServer;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 

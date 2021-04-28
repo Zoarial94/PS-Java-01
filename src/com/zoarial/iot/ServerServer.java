@@ -1,6 +1,15 @@
-package com.zoarial;
+package com.zoarial.iot;
 
-import com.zoarial.threads.*;
+import com.zoarial.*;
+import com.zoarial.iot.models.IoTAction;
+import com.zoarial.iot.models.IoTPacketSection;
+import com.zoarial.iot.models.JavaIoTAction;
+import com.zoarial.iot.models.ScriptIoTAction;
+import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
+import com.zoarial.iot.threads.tcp.ServerSocketHelper;
+import com.zoarial.iot.threads.udp.DatagramSocketHelper;
+import com.zoarial.iot.threads.udp.HeadUDPThread;
+import com.zoarial.iot.threads.udp.NonHeadUDPThread;
 
 import java.io.*;
 import java.net.*;
@@ -280,24 +289,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     public ArrayList<IoTAction> getListOfActions() {
         return listOfActions;
-    }
-
-    public static byte[] getNetworkResponse(List<IoTPacketSection> sections) {
-        byte[] fullBytesArr;
-        int len = 0;
-
-        for(IoTPacketSection section : sections) {
-            len += section.getByteList().length;
-        }
-
-        fullBytesArr = new byte[len];
-        len = 0;
-        for(IoTPacketSection section : sections) {
-            System.arraycopy(section.getByteList(), 0, fullBytesArr, len, section.getByteList().length);
-            len += section.getByteList().length;
-        }
-
-        return fullBytesArr;
     }
 
     public InetAddress getIP() {

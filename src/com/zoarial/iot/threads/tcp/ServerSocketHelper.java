@@ -1,13 +1,12 @@
-package com.zoarial.threads;
+package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.ServerServer;
+import com.zoarial.iot.ServerServer;
 
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -111,7 +110,7 @@ public class ServerSocketHelper extends PrintBaseClass implements Runnable {
         try {
             return _queue.take();
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            println("Interrupted, server must be closing.");
         }
         return null;
     }
