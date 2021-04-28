@@ -73,7 +73,6 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                 }
 
                 int sessionID = _inSocket.in.readInt();
-                _inSocket.in.readByte();
                 if (sessions.containsKey(sessionID)) {
                     // Continue working with session
                     println("Continuing to work with session: " + sessionID);
@@ -83,14 +82,22 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                     println("Working with new session: " + sessionID);
                     println("Request: " + str);
                     switch (str) {
-                        case "action":
-                            respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.ACTION));
-                            break;
-                        case "info":
-                            respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Here's some info");
-                            break;
-                        default:
-                            respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid request: " + str);
+                        case "action" -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.ACTION), "I haven't implemented this yet.");
+                        case "info" -> {
+                            str = readString();
+                            switch (str) {
+                                case "get" -> {
+                                    str = readString();
+                                    switch (str) {
+                                        case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
+                                        default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + str);
+                                    }
+                                }
+                                case "general" -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Here's some general information");
+                                default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid info request");
+                            }
+                        }
+                        default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid request: " + str);
                     }
                 }
 
