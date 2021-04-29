@@ -1,5 +1,6 @@
 package com.zoarial.iot.models;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -37,12 +38,15 @@ public abstract class IoTAction {
     // This will be called and executed in its own thread
     protected abstract String privExecute(List<String> args);
 
+    public final String execute() {
+        return execute(new ArrayList<>());
+    }
     //Ensure the argument size is correct
     public final String execute(List<String> args) {
         if(arguments == args.size()) {
             return privExecute(args);
         }
-        throw new IllegalArgumentException("Incorrect amount of arguments. Needed: " + arguments + "Got: " + args.size());
+        throw new IllegalArgumentException("Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
     }
 
     public String getName() {

@@ -1,5 +1,8 @@
 package com.zoarial.iot.models;
 
+import javax.print.attribute.standard.MediaSize;
+
+// TODO: refactor all uses of this class
 public class IoTSession {
     private final int sessionID;
     private final IoTSessionType type;
@@ -10,6 +13,10 @@ public class IoTSession {
         ACTION,
         INFO,
         OTHER,
+    }
+
+    public IoTSession(int sessionID) {
+        this(sessionID, IoTSessionType.OTHER);
     }
 
     public IoTSession(int sessionID, IoTSessionType type) {

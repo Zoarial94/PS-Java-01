@@ -77,24 +77,39 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                     // Continue working with session
                     println("Continuing to work with session: " + sessionID);
                 } else {
+                    IoTSession session = new IoTSession(sessionID);
                     // New session
                     str = readString();
                     println("Working with new session: " + sessionID);
                     println("Request: " + str);
                     switch (str) {
-                        case "action" -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.ACTION), "I haven't implemented this yet.");
+                        case "action" -> {
+                            var actionsList = _server.getListOfActions();
+                            long uuid_high = _inSocket.in.readLong();
+                            long uuid_low = _inSocket.in.readLong();
+                            UUID uuid = new UUID(uuid_high, uuid_low);
+                            for(IoTAction action : actionsList) {
+                                if(action.getUUID().equals(uuid)) {
+                                    str = action.execute();
+                                    respondToSession(session, str);
+                                    break;
+                                };
+                            }
+                            respondToSession(session, "No action with UUID: " + uuid);
+                        }
                         case "info" -> {
                             str = readString();
                             switch (str) {
-                                case "get" -> {
-                                    str = readString();
-                                    switch (str) {
-                                        case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
-                                        default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + str);
-                                    }
+                                case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
+                                case "general" -> {
+                                    IoTPacketSectionList sectionList = new IoTPacketSectionList();
+                                    sectionList.add(_server.getHostname());
+                                    sectionList.add(_server.getUUID());
+                                    sectionList.add(_server.isHeadCapable());
+                                    sectionList.add(_server.isVolatile());
+                                    respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), sectionList);
                                 }
-                                case "general" -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Here's some general information");
-                                default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid info request");
+                                default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + str);
                             }
                         }
                         default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid request: " + str);
@@ -102,6 +117,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                 }
 
                 // We have to flush otherwise, out data may never be sent.
+                // TODO: fixing the shutdown would prevent the need for this
                 _inSocket.out.flush();
             } catch (EOFException e) {
                 println("End of file: should be closed!");
@@ -128,6 +144,8 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
 
     private void respondToSession(IoTSession session,  IoTPacketSectionList sectionList) {
         try {
+            _inSocket.out.writeBytes("ZIoT");
+            _inSocket.out.writeInt(session.getSessionID());
             _inSocket.out.write(sectionList.getNetworkResponse());
         } catch (IOException e) {
             e.printStackTrace();
