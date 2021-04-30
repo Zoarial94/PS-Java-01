@@ -8,8 +8,8 @@ import java.util.function.Supplier;
 public class JavaIoTAction extends IoTAction {
     Function<List<String>, String> exec;
 
-    public JavaIoTAction(String name, UUID uuid, byte level, byte args, Function<List<String>, String> exec) {
-        super(name, uuid, level, args);
+    public JavaIoTAction(String name, UUID uuid, byte level, boolean encrypted, byte args, Function<List<String>, String> exec) {
+        super(name, uuid, level, encrypted, args);
         this.exec = exec;
     }
 

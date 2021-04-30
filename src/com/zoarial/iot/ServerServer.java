@@ -175,18 +175,18 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     private void generateIoTActions() {
 
-        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, true, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, true, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("GetUptime", UUID.fromString("8ed2e6fb-7311-45e1-853f-d7b1c36684ac"), (byte)4, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("GetUptime", UUID.fromString("8ed2e6fb-7311-45e1-853f-d7b1c36684ac"), (byte)4, true, (byte)0, (list)-> {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
-        listOfActions.add(new JavaIoTAction("Print", UUID.randomUUID(), (byte)4, (byte)1, (list) -> {
+        listOfActions.add(new JavaIoTAction("Print", UUID.randomUUID(), (byte)4, true, (byte)1, (list) -> {
             println(list.get(0));
             return "";
         }));
@@ -231,7 +231,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 println("Adding " + fileName);
                 // By default use highest security level
                 // Security level should be changed manually by user though other means. (Saved to database)
-                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, (byte) 0, file);
+                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, (byte) 0, file);
                 println(action);
                 listOfActions.add(action);
             });

@@ -20,19 +20,18 @@ public abstract class IoTAction {
      * Level 0 means no security
      * Level 1 means basic security. Needs HTOP or TOTP
      * Level 2 needs stronger identification (public/private keys)
-     * From here on, all communications need to be fully encrypted
-     * Level 3 is the same as level 1, but communication needs to be encrypted. (SSL/TLS probably over HTTP)
-     * Level 4 is the same as level 2, but communication needs to be encrypted.
      * Level 10 means only the local machine can run it.
      */
     private final byte actionSecurityLevel;
     private final byte arguments;
+    private final boolean encrypted;
 
-    protected IoTAction(String name, UUID uuid, byte level, byte arguments) {
+    protected IoTAction(String name, UUID uuid, byte level, boolean encrypted, byte arguments) {
         actionName = name;
         actionUuid = uuid;
         actionSecurityLevel = level;
         this.arguments = arguments;
+        this.encrypted = encrypted;
     }
 
     // This will be called and executed in its own thread
@@ -63,6 +62,10 @@ public abstract class IoTAction {
 
     public byte getNumberOfArguments() {
         return arguments;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
     }
 
     @Override

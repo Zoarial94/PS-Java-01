@@ -35,7 +35,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
         // TODO: have some way to add and remove the socket to the list
         // We could then close the socket and have it flush before the ServerSocket is closed
         threads.add(Thread.currentThread());
-        println("Starting...");
+        println("Starting connection with: " + _inSocket.inSocket.getRemoteSocketAddress());
         try { // This might be unnecessary, but better safe than sorry
             runLogic();
         } finally {
@@ -46,6 +46,8 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
         }
     }
 
+    // TODO: redo this to use a circular buffer for the input
+    // Use the raw stream and data stream
     private void runLogic() {
         // If we leave this try/catch block, then the socket is closed.
         while (!_server.isClosed() && !_inSocket.inSocket.isClosed()) {
@@ -90,7 +92,19 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                             UUID uuid = new UUID(uuid_high, uuid_low);
                             for(IoTAction action : actionsList) {
                                 if(action.getUUID().equals(uuid)) {
-                                    str = action.execute();
+                                    if(action.isEncrypted() && !_inSocket.isEncrypted()) {
+                                        respondToSession(session, "You need to be encrypted to use this action.");
+                                    }
+                                    int numOfArguments = action.getNumberOfArguments();
+                                    if(numOfArguments == 0) {
+                                        str = action.execute();
+                                    } else {
+                                        ArrayList<String> arguments = new ArrayList<>(numOfArguments);
+                                        for(int i = 0; i < numOfArguments; i++) {
+                                            arguments.add(readString());
+                                        }
+                                        str = action.execute(arguments);
+                                    }
                                     respondToSession(session, str);
                                     break;
                                 };
