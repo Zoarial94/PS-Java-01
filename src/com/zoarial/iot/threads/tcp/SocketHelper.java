@@ -2,12 +2,16 @@ package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.models.IoTSession;
+import com.zoarial.iot.models.actions.IoTAction;
+import com.zoarial.iot.models.actions.IoTActionArgument;
+import com.zoarial.iot.models.actions.IoTActionArgumentList;
 
 import java.io.*;
 import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.Arrays;
+import java.util.UUID;
 
 class SocketHelper extends PrintBaseClass {
     public final Socket inSocket;
@@ -49,7 +53,7 @@ class SocketHelper extends PrintBaseClass {
         rawIn = tempRawIn;
     }
 
-    private String readKey() throws IOException {
+    public String readKey() throws IOException {
         StringBuilder str = new StringBuilder();
         byte b = in.readByte();
         while(b != ':') {
@@ -59,17 +63,17 @@ class SocketHelper extends PrintBaseClass {
         return str.toString();
     }
 
-    private String readValue() throws  IOException {
+    public String readValue() throws  IOException {
         StringBuilder str = new StringBuilder();
         byte b = in.readByte();
-        while(b != ',' && b != ';') {
+        while(b != ',' && b != '.') {
             str.append((char)b);
             b = in.readByte();
         }
         return str.toString();
     }
 
-    private String readString() throws IOException {
+    public String readString() throws IOException {
         StringBuilder str = new StringBuilder();
         byte b = in.readByte();
         while(b != 0) {
@@ -79,8 +83,45 @@ class SocketHelper extends PrintBaseClass {
         return str.toString();
     }
 
+    public UUID readUUID() throws IOException {
+        return new UUID(in.readLong(), in.readLong());
+    }
+
+    public int readInt() throws IOException {
+        return in.readInt();
+    }
+
+    public long readLong() throws IOException {
+        return in.readLong();
+    }
+
+    public byte readByte() throws IOException {
+        return in.readByte();
+    }
+
+    public IoTActionArgumentList readArgumentList(IoTAction action) throws IOException {
+
+        IoTActionArgumentList argumentList = new IoTActionArgumentList();
+
+        byte b = in.readByte();
+        while(b != '.') {
+            StringBuilder str = new StringBuilder();
+            while (b != ',' && b != '.') {
+                str.append((char) b);
+                b = in.readByte();
+            }
+            argumentList.add(new IoTActionArgument(str.toString()));
+        }
+        return argumentList;
+    }
+
+
     public boolean isEncrypted() {
         return encrypted;
+    }
+
+    public boolean isLocal() {
+        return local;
     }
 
     public boolean isClosed() {

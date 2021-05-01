@@ -1,15 +1,19 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.*;
-import com.zoarial.iot.models.IoTAction;
+import com.zoarial.iot.models.actions.IoTAction;
 import com.zoarial.iot.ServerServer;
-import com.zoarial.iot.models.IoTPacketSection;
 import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.IoTSession;
+import com.zoarial.iot.models.actions.IoTActionArgument;
+import com.zoarial.iot.models.actions.IoTActionArgumentList;
+import com.zoarial.iot.models.actions.IoTActionRequest;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
+import java.security.KeyPairGenerator;
+import java.security.Security;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -26,6 +30,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
     SocketHelper _inSocket;
 
     public HeadTCPThread(ServerServer server, SocketHelper inSocket) {
+
         super("HeadTCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
         _server = server;
@@ -47,11 +52,13 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
     }
 
     // TODO: redo this to use a circular buffer for the input
+    // may not need circular buffer. Maybe assume all data coming in is correct and if not, then the socket will eventually close.
     // Use the raw stream and data stream
     private void runLogic() {
         // If we leave this try/catch block, then the socket is closed.
         while (!_server.isClosed() && !_inSocket.inSocket.isClosed()) {
             String str;
+            int otp;
             try {
                 final String HEADER = "ZIoT";
                 byte[] buf = new byte[256];
@@ -81,38 +88,54 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                 } else {
                     IoTSession session = new IoTSession(sessionID);
                     // New session
-                    str = readString();
+                    str = _inSocket.readString();
                     println("Working with new session: " + sessionID);
                     println("Request: " + str);
                     switch (str) {
                         case "action" -> {
                             var actionsList = _server.getListOfActions();
-                            long uuid_high = _inSocket.in.readLong();
-                            long uuid_low = _inSocket.in.readLong();
-                            UUID uuid = new UUID(uuid_high, uuid_low);
-                            for(IoTAction action : actionsList) {
-                                if(action.getUUID().equals(uuid)) {
-                                    if(action.isEncrypted() && !_inSocket.isEncrypted()) {
-                                        respondToSession(session, "You need to be encrypted to use this action.");
-                                    }
-                                    int numOfArguments = action.getNumberOfArguments();
-                                    if(numOfArguments == 0) {
-                                        str = action.execute();
-                                    } else {
-                                        ArrayList<String> arguments = new ArrayList<>(numOfArguments);
-                                        for(int i = 0; i < numOfArguments; i++) {
-                                            arguments.add(readString());
+                            IoTActionArgumentList args = new IoTActionArgumentList();
+                            UUID uuid = _inSocket.readUUID();
+
+                            // Check for the action
+                            IoTAction action = actionsList.get(uuid);
+                            if(action != null) {
+                                // Check access
+                                if(action.isLocal() && !_inSocket.isLocal()) {
+                                    respondToSession(session, "You don't have access to this ");
+                                    // Check assess
+                                } else if(action.isEncrypted() && !(_inSocket.isEncrypted() || _inSocket.isLocal())) {
+                                    respondToSession(session, "You don't have access to this.");
+                                    // You have access, start doing stuff
+                                } else {
+                                    // Parse the request
+                                    // Get arguments, etc
+
+                                    String key = "";
+                                    while(!key.equals("args")) {
+                                        key = _inSocket.readKey();
+                                        switch (key) {
+                                            case "otp" -> otp = _inSocket.readInt();
+                                            case "args" -> {
+                                                args = _inSocket.readArgumentList(action);
+                                            }
                                         }
-                                        str = action.execute(arguments);
+                                    }
+
+                                    int numOfArguments = action.getNumberOfArguments();
+                                    if (numOfArguments == 0) {
+                                        str = action.execute();
+                                    } else if (args != null){
+                                        str = action.execute(args);
                                     }
                                     respondToSession(session, str);
-                                    break;
-                                };
+                                }
+                            } else {
+                                respondToSession(session, "No action with UUID: " + uuid);
                             }
-                            respondToSession(session, "No action with UUID: " + uuid);
                         }
                         case "info" -> {
-                            str = readString();
+                            str = _inSocket.readString();
                             switch (str) {
                                 case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 case "general" -> {
@@ -144,16 +167,6 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                 return; // Cleanup is done after function returns
             }
         }
-    }
-
-    private String readString() throws IOException {
-        StringBuilder str = new StringBuilder();
-        byte b = _inSocket.in.readByte();
-        while(b != 0) {
-            str.append((char)b);
-            b = _inSocket.in.readByte();
-        }
-        return str.toString();
     }
 
     private void respondToSession(IoTSession session,  IoTPacketSectionList sectionList) {

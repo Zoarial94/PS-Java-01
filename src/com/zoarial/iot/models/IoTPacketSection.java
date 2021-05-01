@@ -4,25 +4,16 @@ import java.nio.ByteBuffer;
 import java.util.UUID;
 
 public class IoTPacketSection {
-    enum PacketSectionType {
-        STRING,
-        INTEGER,
-        BYTE,
-        LONG,
-        UUID,
-        HEADER,
-        BOOLEAN,
-    }
-    final private PacketSectionType type;
+    final private IoTBasicType type;
     final private String str;
     final private long num;
     final private long uuid_low;
 
     public IoTPacketSection(String str) {
         if (str.equals("ZIoT")) {
-            type = PacketSectionType.HEADER;
+            type = IoTBasicType.HEADER;
         } else {
-            type = PacketSectionType.STRING;
+            type = IoTBasicType.STRING;
         }
         this.str = str;
         num = 0;
@@ -30,35 +21,35 @@ public class IoTPacketSection {
     }
 
     public IoTPacketSection(byte b) {
-        type = PacketSectionType.BYTE;
+        type = IoTBasicType.BYTE;
         num = (int)b & 0xFF;
         uuid_low = 0;
         str = "";
     }
 
     public IoTPacketSection(int i) {
-        type = PacketSectionType.INTEGER;
+        type = IoTBasicType.INTEGER;
         num = i;
         uuid_low = 0;
         str = "";
     }
 
     public IoTPacketSection(long i) {
-        type = PacketSectionType.LONG;
+        type = IoTBasicType.LONG;
         num = i;
         uuid_low = 0;
         str = "";
     }
 
     public IoTPacketSection(UUID uuid) {
-        type = PacketSectionType.UUID;
+        type = IoTBasicType.UUID;
         num = uuid.getMostSignificantBits();
         uuid_low = uuid.getLeastSignificantBits();
         str = "";
     }
 
     public IoTPacketSection(boolean b) {
-        type = PacketSectionType.BOOLEAN;
+        type = IoTBasicType.BOOLEAN;
         num = 0;
         uuid_low = 0;
         str = b ? "true" : "false";
@@ -82,7 +73,7 @@ public class IoTPacketSection {
         };
     }
 
-    public PacketSectionType getType() {
+    public IoTBasicType getType() {
         return type;
     }
 

@@ -1,4 +1,7 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.models.actions;
+
+import com.zoarial.iot.models.IoTBasicType;
+import com.zoarial.iot.models.IoTNode;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -8,6 +11,7 @@ public abstract class IoTAction {
     private final String actionName;
     private final String description = "";
     private final UUID actionUuid;
+    private final IoTBasicType returnType = IoTBasicType.STRING;
 
     // Default, anyone with the right level can use.
     private boolean allowByDefault = true;
@@ -25,23 +29,25 @@ public abstract class IoTAction {
     private final byte actionSecurityLevel;
     private final byte arguments;
     private final boolean encrypted;
+    private final boolean local;
 
-    protected IoTAction(String name, UUID uuid, byte level, boolean encrypted, byte arguments) {
+    protected IoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte arguments) {
         actionName = name;
         actionUuid = uuid;
         actionSecurityLevel = level;
         this.arguments = arguments;
         this.encrypted = encrypted;
+        this.local = local;
     }
 
     // This will be called and executed in its own thread
-    protected abstract String privExecute(List<String> args);
+    protected abstract String privExecute(IoTActionArgumentList args);
 
     public final String execute() {
-        return execute(new ArrayList<>());
+        return execute(new IoTActionArgumentList());
     }
     //Ensure the argument size is correct
-    public final String execute(List<String> args) {
+    public final String execute(IoTActionArgumentList args) {
         if(arguments == args.size()) {
             return privExecute(args);
         }
@@ -66,6 +72,10 @@ public abstract class IoTAction {
 
     public boolean isEncrypted() {
         return encrypted;
+    }
+
+    public boolean isLocal() {
+        return local;
     }
 
     @Override

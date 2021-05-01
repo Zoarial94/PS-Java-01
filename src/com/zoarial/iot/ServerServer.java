@@ -1,9 +1,7 @@
 package com.zoarial.iot;
 
 import com.zoarial.*;
-import com.zoarial.iot.models.IoTAction;
-import com.zoarial.iot.models.JavaIoTAction;
-import com.zoarial.iot.models.ScriptIoTAction;
+import com.zoarial.iot.models.actions.*;
 import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
 import com.zoarial.iot.threads.udp.DatagramSocketHelper;
@@ -33,7 +31,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     final private AtomicBoolean _close = new AtomicBoolean(false);
 
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
-    final private ArrayList<IoTAction> listOfActions = new ArrayList<>(10);
+    final private IoTActionList listOfActions = new IoTActionList();
     private long startTime;
 
     //Server can update these at runtime
@@ -175,18 +173,18 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     private void generateIoTActions() {
 
-        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, true, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, true, false, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, true, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, true, true, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("GetUptime", UUID.fromString("8ed2e6fb-7311-45e1-853f-d7b1c36684ac"), (byte)4, true, (byte)0, (list)-> {
+        listOfActions.add(new JavaIoTAction("GetUptime", UUID.fromString("8ed2e6fb-7311-45e1-853f-d7b1c36684ac"), (byte)4, true, false, (byte)0, (list)-> {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
-        listOfActions.add(new JavaIoTAction("Print", UUID.randomUUID(), (byte)4, true, (byte)1, (list) -> {
+        listOfActions.add(new JavaIoTAction("Print", UUID.fromString("6ed5edb1-1757-4953-96f4-89b89a0140e8"), (byte)4, true, false, (byte)1, (list) -> {
             println(list.get(0));
             return "";
         }));
@@ -231,7 +229,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 println("Adding " + fileName);
                 // By default use highest security level
                 // Security level should be changed manually by user though other means. (Saved to database)
-                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, (byte) 0, file);
+                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
                 println(action);
                 listOfActions.add(action);
             });
@@ -290,7 +288,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         System.out.println();
     }
 
-    public ArrayList<IoTAction> getListOfActions() {
+    public IoTActionList getListOfActions() {
         return listOfActions;
     }
 
