@@ -8,6 +8,10 @@ import com.zoarial.iot.models.IoTSession;
 import com.zoarial.iot.models.actions.IoTActionArgument;
 import com.zoarial.iot.models.actions.IoTActionArgumentList;
 import com.zoarial.iot.models.actions.IoTActionRequest;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -59,10 +63,12 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
         while (!_server.isClosed() && !_inSocket.inSocket.isClosed()) {
             String str;
             int otp;
+            byte securityLevel;
             try {
                 final String HEADER = "ZIoT";
                 byte[] buf = new byte[256];
                 int read = _inSocket.in.read(buf, 0, 4);
+                securityLevel = 0;
                 // See if the first 4 bytes are ZIoT.
                 // If they aren't then close the thread.
                 if(read != 4) {
@@ -94,9 +100,17 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                     switch (str) {
                         case "action" -> {
                             var actionsList = _server.getListOfActions();
-                            IoTActionArgumentList args = new IoTActionArgumentList();
-                            UUID uuid = _inSocket.readUUID();
 
+                            String rawJson = _inSocket.readJson();
+
+                            JSONObject jsonObject = new JSONObject(rawJson);
+
+                            if(jsonObject.has("otp")) {
+                                securityLevel = 1;
+                            }
+
+                            UUID uuid = UUID.fromString(jsonObject.getString("uuid"));
+                            JSONArray args = jsonObject.getJSONArray("args");
                             // Check for the action
                             IoTAction action = actionsList.get(uuid);
                             if(action != null) {
@@ -108,24 +122,11 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                                     respondToSession(session, "You don't have access to this.");
                                     // You have access, start doing stuff
                                 } else {
-                                    // Parse the request
-                                    // Get arguments, etc
-
-                                    String key = "";
-                                    while(!key.equals("args")) {
-                                        key = _inSocket.readKey();
-                                        switch (key) {
-                                            case "otp" -> otp = _inSocket.readInt();
-                                            case "args" -> {
-                                                args = _inSocket.readArgumentList(action);
-                                            }
-                                        }
-                                    }
 
                                     int numOfArguments = action.getNumberOfArguments();
                                     if (numOfArguments == 0) {
                                         str = action.execute();
-                                    } else if (args != null){
+                                    } else {
                                         str = action.execute(args);
                                     }
                                     respondToSession(session, str);
@@ -165,6 +166,10 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
             } catch (IOException ex) {
                 ex.printStackTrace();
                 return; // Cleanup is done after function returns
+            } catch (JSONException ex) {
+                ex.printStackTrace();
+                println("Something is wrong with the json format.");
+                return;
             }
         }
     }

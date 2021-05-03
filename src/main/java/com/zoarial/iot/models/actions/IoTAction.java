@@ -54,6 +54,16 @@ public abstract class IoTAction {
         throw new IllegalArgumentException("Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
     }
 
+    // Just call the other execute function
+    public final String execute(JSONArray args) {
+        int len = args.length();
+        IoTActionArgumentList list = new IoTActionArgumentList();
+        for(int i = 0; i < len; i++) {
+            list.add(args.getString(i));
+        }
+        return execute(list);
+    }
+
     public String getName() {
         return actionName;
     }

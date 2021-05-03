@@ -1,16 +1,12 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.models.IoTSession;
 import com.zoarial.iot.models.actions.IoTAction;
 import com.zoarial.iot.models.actions.IoTActionArgument;
 import com.zoarial.iot.models.actions.IoTActionArgumentList;
 
 import java.io.*;
-import java.net.Inet4Address;
-import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.util.Arrays;
 import java.util.UUID;
 
 class SocketHelper extends PrintBaseClass {
@@ -97,6 +93,28 @@ class SocketHelper extends PrintBaseClass {
 
     public byte readByte() throws IOException {
         return in.readByte();
+    }
+
+    public String readJson() throws IOException {
+        StringBuilder json = new StringBuilder();
+
+        byte b = in.readByte();
+        if(b != '{') {
+            return "";
+        }
+        json.append((char)b);
+        int num = 1;
+        while(num != 0) {
+            b = in.readByte();
+            if(b == '{') {
+                num++;
+            } else if (b == '}') {
+                num--;
+            }
+            json.append((char)b);
+        }
+
+        return json.toString();
     }
 
     public IoTActionArgumentList readArgumentList(IoTAction action) throws IOException {

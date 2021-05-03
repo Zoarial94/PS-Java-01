@@ -185,8 +185,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
         listOfActions.add(new JavaIoTAction("Print", UUID.fromString("6ed5edb1-1757-4953-96f4-89b89a0140e8"), (byte)4, true, false, (byte)1, (list) -> {
-            println(list.get(0));
-            return "";
+            println(list.get(0).getString());
+            return "printed";
         }));
 
         // For now, assume we are always on linux.
