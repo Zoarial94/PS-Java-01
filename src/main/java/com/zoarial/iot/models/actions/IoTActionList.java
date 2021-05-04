@@ -23,6 +23,25 @@ public class IoTActionList extends ArrayList<IoTAction> {
         }
     }
 
+    public IoTAction remove(UUID uuid) {
+        int index = indexOf(uuid);
+        if(index != -1) {
+            uuidMap.remove(uuid);
+            return remove(index);
+        } else {
+            return null;
+        }
+    }
+
+    public int indexOf(UUID uuid) {
+        IoTAction action = get(uuid);
+        if(action == null) {
+            return -1;
+        } else {
+            return indexOf(action);
+        }
+    }
+
     @Override
     public boolean add(IoTAction action) {
         boolean b = super.add(action);

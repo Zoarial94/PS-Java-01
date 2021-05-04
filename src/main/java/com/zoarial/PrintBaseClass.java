@@ -26,7 +26,7 @@ public abstract class PrintBaseClass {
     }
 
     protected <T> void println(T var) {
-        System.out.print(ANSI_BLUE + prefix + ANSI_RESET + ": " + var);
+        System.out.println(ANSI_BLUE + prefix + ANSI_RESET + ": " + var);
     }
     protected static void println() {
         System.out.println();

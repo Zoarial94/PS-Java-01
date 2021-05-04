@@ -4,6 +4,7 @@ import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.models.actions.IoTAction;
 import com.zoarial.iot.models.actions.IoTActionList;
 import com.zoarial.iot.models.actions.JavaIoTAction;
+import com.zoarial.iot.models.actions.ScriptIoTAction;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;
@@ -60,6 +61,33 @@ public class IoTActionDAO extends PrintBaseClass {
 
     }
 
+
+    public ScriptIoTAction getScriptActionByName(String name) {
+
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+
+        // Criteria stuff
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<ScriptIoTAction> query = builder.createQuery(ScriptIoTAction.class);
+        Root<ScriptIoTAction> root = query.from(ScriptIoTAction.class);
+        ParameterExpression<String> nameParameter = builder.parameter(String.class);
+        CriteriaQuery<ScriptIoTAction> select = query.select(root).where(builder.equal(root.get("name"), nameParameter));
+
+        // Actual query
+        TypedQuery<ScriptIoTAction> typedQuery = em.createQuery(select);
+        typedQuery.setParameter(nameParameter, name);
+        List<ScriptIoTAction> resultList = typedQuery.getResultList();
+        if(resultList.size() > 1) {
+            println("Found multiple actions for one name... Something isn't right.");
+            return null;
+        } else if (resultList.size() == 0){
+            return null;
+        } else {
+            return resultList.get(0);
+        }
+    }
+
     public JavaIoTAction getJavaActionByName(String name) {
 
         EntityManager em = emf.createEntityManager();
@@ -70,7 +98,7 @@ public class IoTActionDAO extends PrintBaseClass {
         CriteriaQuery<JavaIoTAction> query = builder.createQuery(JavaIoTAction.class);
         Root<JavaIoTAction> root = query.from(JavaIoTAction.class);
         ParameterExpression<String> nameParameter = builder.parameter(String.class);
-        CriteriaQuery<JavaIoTAction> select = query.select(root).where(builder.equal(root.get("actionName"), nameParameter));
+        CriteriaQuery<JavaIoTAction> select = query.select(root).where(builder.equal(root.get("name"), nameParameter));
 
         // Actual query
         TypedQuery<JavaIoTAction> typedQuery = em.createQuery(select);
@@ -78,6 +106,8 @@ public class IoTActionDAO extends PrintBaseClass {
         List<JavaIoTAction> resultList = typedQuery.getResultList();
         if(resultList.size() > 1) {
             println("Found multiple actions for one name... Something isn't right.");
+            return null;
+        } else if (resultList.size() == 0){
             return null;
         } else {
             return resultList.get(0);

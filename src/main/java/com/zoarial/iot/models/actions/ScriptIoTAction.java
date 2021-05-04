@@ -29,9 +29,13 @@ public class ScriptIoTAction extends IoTAction {
 
     }
 
+    public static boolean isValidFile(Path path) {
+        return Files.exists(path) && Files.isRegularFile(path) && Files.isReadable(path) && Files.isExecutable(path) && !Files.isSymbolicLink(path);
+    }
+
     @Override
-    protected boolean isStillValid() {
-        return Files.exists(path);
+    public boolean isValid() {
+        return isValidFile(path);
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.zoarial.iot;
 
 import com.zoarial.*;
 import com.zoarial.iot.dao.IoTActionDAO;
+import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.actions.*;
 import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
@@ -33,6 +34,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     final private IoTActionList listOfActions = new IoTActionList();
+    final private IoTActionList actionsInQuestion = new IoTActionList();
     private long startTime;
 
     //Server can update these at runtime
@@ -176,34 +178,59 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
         IoTActionDAO ioTActionDAO = new IoTActionDAO();
 
-        IoTActionList allDBActions = new IoTActionList();
-
-        ArrayList<JavaIoTAction> tmpList = new ArrayList<>(4);
-
-        tmpList.add(new JavaIoTAction("Stop", (byte)4, true, false, (byte)0, (list)-> {
+        // List all internal actions
+        // We check later whether they are in the database (by name)
+        // Maybe later, have a seed in the config file to generate random, but constant ids for JavaIoTActions
+        // This would help with finding the actions by an id, rather than by name
+        ArrayList<JavaIoTAction> javaIoTActions = new ArrayList<>(4);
+        javaIoTActions.add(new JavaIoTAction("Stop", (byte)4, true, false, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        tmpList.add(new JavaIoTAction("Shutdown", (byte)4, true, true, (byte)0, (list)-> {
+        javaIoTActions.add(new JavaIoTAction("Shutdown", (byte)4, true, true, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        tmpList.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> {
+        javaIoTActions.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
-        tmpList.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list) -> {
+        javaIoTActions.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list) -> {
             println(list.get(0).getString());
             return "printed";
         }));
+        javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)1, (list)->{
+            IoTPacketSectionList sectionList = new IoTPacketSectionList(actionsInQuestion.size() * 4);
+            for(IoTAction action : actionsInQuestion) {
+                sectionList.add(action.getUuid());
+                sectionList.add(action.getName());
+                sectionList.add(action.getSecurityLevel());
+                sectionList.add(action.getArguments());
+            }
+            return new String(sectionList.getNetworkResponse()) + "\0";
+        }));
+        javaIoTActions.add(new JavaIoTAction("AddNewScriptToActions", (byte)4, true, true, (byte)1, (list)->{
+            UUID uuid = UUID.fromString(list.get(0).getString());
+            println("UUID: " + uuid);
+            IoTAction action = actionsInQuestion.remove(uuid);
+            if(action == null) {
+                return "There is no action with that UUID.";
+            } else {
+                listOfActions.add(action);
+                return "Success.";
+            }
+        }));
 
-        for(JavaIoTAction action : tmpList) {
-            JavaIoTAction qAction = ioTActionDAO.getJavaActionByName(action.getName());
-            if(qAction == null) {
+        // If the action was not found, then add it with default permissions
+        for(JavaIoTAction action : javaIoTActions) {
+            JavaIoTAction dbAction = ioTActionDAO.getJavaActionByName(action.getName());
+            if(dbAction == null) {
                 action.setUuid(UUID.randomUUID());
+                println("JavaIoTAction was not in database. Adding now:\n" + action);
                 ioTActionDAO.persist(action);
                 listOfActions.add(action);
             } else {
-                listOfActions.add(qAction);
+                dbAction.setExec(action.getExec());
+                listOfActions.add(dbAction);
             }
         }
 
@@ -224,38 +251,36 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         // Try to generate the list
+        // TODO: find actions in the db which are stale
         try {
             listOfScripts = Files.list(scriptDir);
             println("Found files: ");
             listOfScripts.filter(file -> {
-                try {
-                    boolean b = Files.getOwner(file).getName().equals("hwhite") &&
-                                Files.isRegularFile(file) &&
-                                Files.isReadable(file) &&
-                                Files.isExecutable(file) &&
-                                !Files.isSymbolicLink(file);
-                    if(!b) {
-                        println("Something is wrong with the permissions/file.");
-                    }
-                    return b;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return false;
+                boolean b = ScriptIoTAction.isValidFile(file);
+                if(!b) {
+                    println("Something is wrong with the permissions/file.");
                 }
+                return b;
             }).forEach(file->{
                 String fileName = file.getFileName().toString();
-                println("Adding " + fileName);
-                // By default use highest security level
-                // Security level should be changed manually by user though other means. (Saved to database)
-                ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
-                println(action);
-                listOfActions.add(action);
+                ScriptIoTAction dbAction = ioTActionDAO.getScriptActionByName(fileName);
+                if(dbAction == null) {
+                    // By default use highest security level
+                    // Security level should be changed manually by user though other means. (Saved to database)
+                    ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
+                    println("There is a new script to add to actions:\n" + action);
+                    actionsInQuestion.add(action);
+                } else {
+                    if(dbAction.isValid()) {
+                        listOfActions.add(dbAction);
+                    } else {
+                        println("Script action is no longer valid:\n" + dbAction);
+                    }
+                }
             });
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-
     }
 
     private void createAndStartNewThread(Runnable runnable) {

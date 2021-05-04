@@ -36,8 +36,8 @@ public class JavaIoTAction extends IoTAction {
     }
 
     @Override
-    protected boolean isStillValid() {
-        return true;
+    public boolean isValid() {
+        return exec != null;
     }
 
     @Override

@@ -61,7 +61,7 @@ public abstract class IoTAction implements Serializable {
 
     // Is this action still valid?
     // Is the required script still present? etc.
-    protected abstract boolean isStillValid();
+    public abstract boolean isValid();
 
     // This will be called and executed in its own thread
     protected abstract String privExecute(IoTActionArgumentList args);
