@@ -1,6 +1,7 @@
 package com.zoarial.iot;
 
 import com.zoarial.*;
+import com.zoarial.iot.dao.IoTActionDAO;
 import com.zoarial.iot.models.actions.*;
 import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
@@ -173,21 +174,38 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     private void generateIoTActions() {
 
-        listOfActions.add(new JavaIoTAction("Stop", UUID.randomUUID(), (byte)4, true, false, (byte)0, (list)-> {
+        IoTActionDAO ioTActionDAO = new IoTActionDAO();
+
+        IoTActionList allDBActions = new IoTActionList();
+
+        ArrayList<JavaIoTAction> tmpList = new ArrayList<>(4);
+
+        tmpList.add(new JavaIoTAction("Stop", (byte)4, true, false, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("Shutdown", UUID.randomUUID(), (byte)4, true, true, (byte)0, (list)-> {
+        tmpList.add(new JavaIoTAction("Shutdown", (byte)4, true, true, (byte)0, (list)-> {
             System.exit(0);
             return "";
         }));
-        listOfActions.add(new JavaIoTAction("GetUptime", UUID.fromString("8ed2e6fb-7311-45e1-853f-d7b1c36684ac"), (byte)4, true, false, (byte)0, (list)-> {
+        tmpList.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
-        listOfActions.add(new JavaIoTAction("Print", UUID.fromString("6ed5edb1-1757-4953-96f4-89b89a0140e8"), (byte)4, true, false, (byte)1, (list) -> {
+        tmpList.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list) -> {
             println(list.get(0).getString());
             return "printed";
         }));
+
+        for(JavaIoTAction action : tmpList) {
+            JavaIoTAction qAction = ioTActionDAO.getJavaActionByName(action.getName());
+            if(qAction == null) {
+                action.setUuid(UUID.randomUUID());
+                ioTActionDAO.persist(action);
+                listOfActions.add(action);
+            } else {
+                listOfActions.add(qAction);
+            }
+        }
 
         // For now, assume we are always on linux.
         Path rootDir = Paths.get("/etc/ZoarialIoT");

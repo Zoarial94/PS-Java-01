@@ -52,5 +52,11 @@ public class Main {
         println("Main is finished.");
         println("Waiting for other threads to finish.");
          */
+
+
+        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+            _server.close();
+        }));
+
     }
 }

@@ -5,19 +5,13 @@ import com.zoarial.iot.models.actions.IoTAction;
 import com.zoarial.iot.ServerServer;
 import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.IoTSession;
-import com.zoarial.iot.models.actions.IoTActionArgument;
-import com.zoarial.iot.models.actions.IoTActionArgumentList;
-import com.zoarial.iot.models.actions.IoTActionRequest;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.json.JSONTokener;
 
 import java.io.EOFException;
 import java.io.IOException;
 import java.net.SocketException;
-import java.security.KeyPairGenerator;
-import java.security.Security;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -123,7 +117,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                                     // You have access, start doing stuff
                                 } else {
 
-                                    int numOfArguments = action.getNumberOfArguments();
+                                    int numOfArguments = action.getArguments();
                                     if (numOfArguments == 0) {
                                         str = action.execute();
                                     } else {
@@ -206,10 +200,10 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
         sectionList.add(actionList.size());
 
         for(IoTAction action : actionList) {
-            sectionList.add(action.getUUID());
+            sectionList.add(action.getUuid());
             sectionList.add(action.getName());
             sectionList.add(action.getSecurityLevel());
-            sectionList.add(action.getNumberOfArguments());
+            sectionList.add(action.getArguments());
         }
 
         try {

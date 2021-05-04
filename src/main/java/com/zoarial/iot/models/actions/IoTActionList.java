@@ -1,8 +1,6 @@
 package com.zoarial.iot.models.actions;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 
 public class IoTActionList extends ArrayList<IoTAction> {
     final private HashMap<UUID, IoTAction> uuidMap;
@@ -17,11 +15,19 @@ public class IoTActionList extends ArrayList<IoTAction> {
         uuidMap = new HashMap<>();
     }
 
+    public IoTActionList(Collection<? extends IoTAction> c) {
+        super(c);
+        uuidMap = new HashMap<>();
+        for(IoTAction action : c) {
+            uuidMap.put(action.getUuid(), action);
+        }
+    }
+
     @Override
     public boolean add(IoTAction action) {
         boolean b = super.add(action);
         if(b) {
-            uuidMap.put(action.getUUID(), action);
+            uuidMap.put(action.getUuid(), action);
         }
         return b;
     }
