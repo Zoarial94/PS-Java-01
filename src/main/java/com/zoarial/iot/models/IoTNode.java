@@ -1,10 +1,18 @@
 package com.zoarial.iot.models;
 
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
 import java.util.UUID;
 
+@Entity
 public class IoTNode {
-    private byte nodeType;
+    @Id
+    @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
     private UUID uuid;
+    @Column(nullable = false)
+    private byte nodeType;
+    @Column(nullable = false)
     private long lastHeardFrom;
 
     public IoTNode(UUID uuid, byte nodeType) {
