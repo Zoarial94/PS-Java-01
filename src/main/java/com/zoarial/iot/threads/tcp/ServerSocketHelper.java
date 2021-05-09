@@ -39,7 +39,7 @@ public class ServerSocketHelper extends PrintBaseClass implements Runnable {
                 println("Accepting new socket.");
                 _queue.put(tmp);                    // Throws InterruptedException if closed
             } catch (InterruptedException | SocketException ex) {
-                println("Interrupted, the server must be closing.");
+                println("Interrupted, no longer accepting new connections.");
                 // TODO: redo this. Its messy and possibly redundant
                 // Make sure we are closing if we aren't already
                 close();
@@ -93,7 +93,7 @@ public class ServerSocketHelper extends PrintBaseClass implements Runnable {
         try {
             return _queue.poll(timeout, timeUnit);
         } catch (InterruptedException e) {
-            println("Interrupted, the server must be closing.");
+            println("Interrupted, returning null.");
         }
         return null;
     }
@@ -110,7 +110,7 @@ public class ServerSocketHelper extends PrintBaseClass implements Runnable {
         try {
             return _queue.take();
         } catch (InterruptedException e) {
-            println("Interrupted, server must be closing.");
+            println("Interrupted, returning null.");
         }
         return null;
     }

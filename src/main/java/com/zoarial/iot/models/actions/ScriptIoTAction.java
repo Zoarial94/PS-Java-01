@@ -29,6 +29,7 @@ public class ScriptIoTAction extends IoTAction {
 
     }
 
+    // TODO: Check file digest (sha1, MD5, etc) for integrity
     public static boolean isValidFile(Path path) {
         return Files.exists(path) && Files.isRegularFile(path) && Files.isReadable(path) && Files.isExecutable(path) && !Files.isSymbolicLink(path);
     }

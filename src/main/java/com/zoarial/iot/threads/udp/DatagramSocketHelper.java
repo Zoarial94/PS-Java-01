@@ -71,7 +71,7 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
                 println("Received packet, adding to queue.");
                 _queue.put(dp);
             } catch (SocketException | InterruptedException ex){
-                println("Interrupted, the server must be closing.");
+                println("Interrupted, no longer receiving new packets.");
             } catch (IOException e) {
                 e.printStackTrace();
                 println("Something went wrong!");

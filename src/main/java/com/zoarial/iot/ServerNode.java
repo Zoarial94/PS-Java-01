@@ -115,9 +115,13 @@ public class ServerNode extends PrintBaseClass {
         return true;
     }
 
-    public void close() {
+    public void close(boolean join) {
         _close = true;
-        _server.close();
+        _server.close(join);
+    }
+
+    public void close() {
+        close(false);
     }
 
 }

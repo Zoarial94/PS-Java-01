@@ -55,7 +55,8 @@ public class Main {
 
 
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
-            _server.close();
+            _server.close(true); // Wait on all threads
+            System.out.flush(); // Make sure we see all data on std out before we finish.
         }));
 
     }
