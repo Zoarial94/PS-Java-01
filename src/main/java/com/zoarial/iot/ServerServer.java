@@ -1,6 +1,7 @@
 package com.zoarial.iot;
 
 import com.zoarial.*;
+import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.dao.IoTActionDAO;
 import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.actions.*;
@@ -121,6 +122,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             println("Starting...");
             startTime = System.currentTimeMillis();
             if (_isHeadCapable) {
+                // I need to use a different database when running the non-head
+                DAOHelper.setEntityManagerFactory("ZIoTNonHead");
                 runHeadCapable();
             } else {
                 runNotHeadCapable();

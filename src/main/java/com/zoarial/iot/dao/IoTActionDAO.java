@@ -18,7 +18,7 @@ public class IoTActionDAO extends PrintBaseClass {
 
     public IoTActionDAO() {
         super("IoTActionDAO");
-        emf = DOAHelper.getEntityManagerFactory();
+        emf = DAOHelper.getEntityManagerFactory();
     }
 
     public synchronized void persist(IoTAction action) {

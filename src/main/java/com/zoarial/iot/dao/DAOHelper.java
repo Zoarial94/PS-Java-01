@@ -4,10 +4,10 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class DOAHelper {
+public class DAOHelper {
     private final static AtomicReference<EntityManagerFactory> entityManagerFactory = new AtomicReference<>();
 
-    private DOAHelper() {
+    private DAOHelper() {
 
     }
 
@@ -22,5 +22,10 @@ public class DOAHelper {
             }
         }
         return emf;
+    }
+    public static void setEntityManagerFactory(String name) {
+        synchronized (entityManagerFactory) {
+            entityManagerFactory.setPlain(Persistence.createEntityManagerFactory(name));
+        }
     }
 }
