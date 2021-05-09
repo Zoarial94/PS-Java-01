@@ -1,6 +1,7 @@
 package com.zoarial.iot.models.actions;
 
 import com.zoarial.iot.models.IoTBasicType;
+import com.zoarial.iot.models.IoTNode;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.json.JSONArray;
@@ -13,8 +14,6 @@ import java.util.UUID;
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 
-@Setter
-@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldDefaults(level = AccessLevel.PROTECTED)
 public abstract class IoTAction implements Serializable {
@@ -23,7 +22,7 @@ public abstract class IoTAction implements Serializable {
     protected UUID uuid;
     @Column(nullable = false, unique = true)
     protected String name;
-    protected String description = "";
+    protected String description;
 
     protected IoTBasicType returnType = IoTBasicType.STRING;
 
@@ -49,6 +48,10 @@ public abstract class IoTAction implements Serializable {
     protected byte arguments;
     protected boolean encrypted;
     protected boolean local;
+
+    // If null, then the action belongs to the local node
+    @ManyToOne
+    protected IoTNode node;
 
     protected IoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte arguments) {
         this.name = name;
@@ -85,6 +88,70 @@ public abstract class IoTAction implements Serializable {
             list.add(args.getString(i));
         }
         return execute(list);
+    }
+
+    public UUID getUuid() {
+        return uuid;
+    }
+
+    public void setUuid(UUID uuid) {
+        this.uuid = uuid;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public IoTBasicType getReturnType() {
+        return returnType;
+    }
+
+    public void setReturnType(IoTBasicType returnType) {
+        this.returnType = returnType;
+    }
+
+    public byte getSecurityLevel() {
+        return securityLevel;
+    }
+
+    public void setSecurityLevel(byte securityLevel) {
+        this.securityLevel = securityLevel;
+    }
+
+    public byte getArguments() {
+        return arguments;
+    }
+
+    public void setArguments(byte arguments) {
+        this.arguments = arguments;
+    }
+
+    public boolean isEncrypted() {
+        return encrypted;
+    }
+
+    public void setEncrypted(boolean encrypted) {
+        this.encrypted = encrypted;
+    }
+
+    public boolean isLocal() {
+        return local;
+    }
+
+    public void setLocal(boolean local) {
+        this.local = local;
     }
 
     @Override

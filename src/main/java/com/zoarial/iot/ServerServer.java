@@ -198,7 +198,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             return String.valueOf(System.currentTimeMillis() - startTime);
         }));
         javaIoTActions.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list) -> {
-            println(list.get(0).getString());
+            println("Being asked to print: \"" + list.get(0).getString() + "\"");
             return "printed";
         }));
         javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)1, (list)->{

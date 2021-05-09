@@ -42,18 +42,6 @@ public class Main {
         }
 
 
-        /*
-        try {
-            Thread.sleep(30000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        _server.close();
-        println("Main is finished.");
-        println("Waiting for other threads to finish.");
-         */
-
-
         Runtime.getRuntime().addShutdownHook(new Thread(()->{
             _server.close(true); // Wait on all threads
             System.out.flush(); // Make sure we see all data on std out before we finish.

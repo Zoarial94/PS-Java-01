@@ -29,4 +29,29 @@
 
         </properties>
     </persistence-unit>
+    <persistence-unit name="ZIoTNonHead" transaction-type="RESOURCE_LOCAL">
+        <!-- Persistence provider -->
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <!-- Entity classes -->
+        <class>com.zoarial.iot.models.IoTNode</class>
+        <class>com.zoarial.iot.models.actions.IoTAction</class>
+        <properties>
+            <property name="javax.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver" />
+            <property name="javax.persistence.jdbc.url"    value="jdbc:mariadb://localhost/ZIoTNonHead" />
+            <property name="javax.persistence.jdbc.user" value="javaUser" />
+            <property name="javax.persistence.jdbc.password" value="eUrsv5d^z5^5jBD4&amp;daC9#eNsK@6!G2LMqG*dcRja^aVn%ed5bqKGiJPd$QT" />
+            <property name="javax.persistence.lock.timeout" value="100"/>
+            <property name="javax.persistence.query.timeout" value="100"/>
+            <!-- <property name="javax.persistence.schema-generation.database.action" value="create" /> -->
+            <property name="hibernate.dialect" value="org.hibernate.dialect.MariaDB103Dialect"/>
+            <property name="hibernate.hbm2ddl.auto" value="update" />
+            <property name="hibernate.show_sql" value="true"/>
+            <property name="hibernate.temp.use_jdbc_metadata_defaults" value="false"/>
+            <property name="hibernate.format_sql" value="true"/>
+            <property name="hibernate.use_sql_comments" value="true"/>
+            <property name="hibernate.generate_statistics" value="true" />
+            <property name="current_session_context_class" value="thread"/>
+
+        </properties>
+    </persistence-unit>
 </persistence>
