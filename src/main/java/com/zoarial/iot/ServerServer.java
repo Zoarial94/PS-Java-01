@@ -70,6 +70,9 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         _messageTimeout = messageTimeout;
         _pingTimeout = pingTimeout;
 
+        // I need to use a different database when running the non-head
+        DAOHelper.setEntityManagerFactory("ZIoTNonHead");
+
         Enumeration<NetworkInterface> n;
         try {
             n = NetworkInterface.getNetworkInterfaces();
@@ -124,8 +127,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             println("Starting...");
             startTime = System.currentTimeMillis();
             if (_isHeadCapable) {
-                // I need to use a different database when running the non-head
-                DAOHelper.setEntityManagerFactory("ZIoTNonHead");
                 runHeadCapable();
             } else {
                 runNotHeadCapable();
