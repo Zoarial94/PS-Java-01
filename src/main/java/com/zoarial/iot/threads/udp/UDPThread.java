@@ -4,6 +4,7 @@ import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.ServerServer;
 import com.zoarial.iot.dao.IoTNodeDAO;
 import com.zoarial.iot.models.IoTNode;
+import com.zoarial.iot.models.IoTPacketSectionList;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -69,7 +70,53 @@ public class UDPThread extends PrintBaseClass implements Runnable {
     }
 
     void nonHeadUDPLoop() {
+        println("Initializing...");
+        //Find head, either by reading from a save file, or a broadcast.
+        while(!_server.isClosed()) {
 
+            IoTPacketSectionList sectionList = new IoTPacketSectionList();
+            sectionList.add("ZIoT");
+            sectionList.add(_server.getNodeType());
+            sectionList.add(_server.getHostname());
+            sectionList.add(_server.getUUID());
+
+            byte[] buf = sectionList.getNetworkResponse();
+
+            byte[] addr = {10, 94, 50, (byte) 146};
+            println("Sending packet...");
+            DatagramPacket dp;
+            try {
+                dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _server.getPort());
+                _datagramSocketHelper.send(dp);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            try {
+                println("Waiting for response...");
+                dp = _datagramSocketHelper.pollNextData(30, TimeUnit.SECONDS);
+                byte[] data = dp.getData();
+                if(!new String(data, 0, 4).equals("ZIoT")) {
+                    println("Not Z-IoT. Trying again...");
+                    continue;
+                }
+                println("Packet is Z-IoT");
+                println("Length: " + dp.getLength());
+
+                InetAddress[] headAddrs = { InetAddress.getByAddress(Arrays.copyOfRange(data, 4, 8)),
+                        InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
+                        InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
+
+                ServerServer.printArray(data, dp.getLength());
+
+                for(InetAddress i : headAddrs) {
+                    ServerServer.printArray(i.getAddress());
+                }
+                return;
+            } catch (IOException | InterruptedException e) {
+                //e.printStackTrace();
+            }
+        }
     }
 
     void replyHeadNodes(DatagramPacket dp) {
