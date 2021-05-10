@@ -42,6 +42,26 @@ public class IoTNodeDAO extends PrintBaseClass {
         }
     }
 
+    public boolean containsNode(IoTNode node) {
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+
+        CriteriaBuilder builder = em.getCriteriaBuilder();
+        CriteriaQuery<IoTNode> query = builder.createQuery(IoTNode.class);
+        Root<IoTNode> root = query.from(IoTNode.class);
+        CriteriaQuery<IoTNode> select = query.select(root).where(builder.equal(root.get("uuid"), node.getUuid()));
+
+        // Actual query
+        TypedQuery<IoTNode> typedQuery = em.createQuery(select);
+        List<IoTNode> resultList = typedQuery.getResultList();
+
+        em.close();
+
+        return resultList.size() == 1;
+
+
+    }
+
     public List<IoTNode> getAllNodes() {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();

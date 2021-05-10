@@ -277,11 +277,13 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                     ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
                     println("There is a new script to add to actions:\n" + action);
                     actionsInQuestion.add(action);
+                    ioTActionDAO.persist(action);
                 } else {
                     if(dbAction.isValid()) {
                         listOfActions.add(dbAction);
                     } else {
                         println("Script action is no longer valid:\n" + dbAction);
+                        actionsInQuestion.add(dbAction);
                     }
                 }
             });

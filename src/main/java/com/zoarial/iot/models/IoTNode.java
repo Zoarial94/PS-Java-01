@@ -14,6 +14,7 @@ public class IoTNode {
     @Id
     @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
     private UUID uuid;
+    private String hostname;
     @Column(nullable = false)
     private byte nodeType;
     @Column(nullable = false)
@@ -22,7 +23,8 @@ public class IoTNode {
     @OneToMany
     List<IoTAction> actions;
 
-    public IoTNode(UUID uuid, byte nodeType) {
+    public IoTNode(String hostname, UUID uuid, byte nodeType) {
+        this.hostname = hostname;
         this.uuid = uuid;
         this.nodeType = nodeType;
     }

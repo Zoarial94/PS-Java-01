@@ -3,6 +3,7 @@ package com.zoarial.iot.threads.udp;
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.ServerServer;
 import com.zoarial.iot.dao.IoTNodeDAO;
+import com.zoarial.iot.models.IoTNode;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -53,8 +54,8 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
                 //println("Timed out.");
                 continue;
             }
-            String str = ServerServer.buildString(dp.getData()).toString();
-            println("Datagram Packet: " + str);
+            //String str = ServerServer.buildString(dp.getData()).toString();
+            //println("Datagram Packet: " + str);
             HeadUDPHandler(dp);
         }
     }
@@ -71,11 +72,11 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
                 return;
             }
 
-            byte node = dpHelper.readByte();
+            byte nodeType = dpHelper.readByte();
             String hostname = dpHelper.readString();
             UUID uuid = dpHelper.readUUID();
 
-            println("Node type is: " + node);
+            println("Node type is: " + nodeType);
             println("Hostname is: " + hostname);
             println("UUID is: " + uuid);
 
@@ -88,6 +89,12 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
 
 
             _datagramSocketHelper.send(dpResponse);
+
+            IoTNode newNode = new IoTNode(hostname, uuid, nodeType);
+            if(!ioTNodeDAO.containsNode(newNode)) {
+                ioTNodeDAO.persist(newNode);
+            }
+
         } catch (IOException e) {
             e.printStackTrace();
         }

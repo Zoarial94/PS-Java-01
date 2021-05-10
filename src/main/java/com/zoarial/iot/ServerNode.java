@@ -2,10 +2,7 @@ package com.zoarial.iot;
 
 import com.zoarial.PrintBaseClass;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -49,13 +46,8 @@ public class ServerNode extends PrintBaseClass {
             return false;
         }
         println("Initializing...");
-        try {
-            is = new FileInputStream(CONFIG_FILE);
-        } catch (FileNotFoundException ex) {
-            return false;
-        }
-
-        try {
+        try(FileInputStream inputStream = new FileInputStream(CONFIG_FILE)) {
+            is = inputStream;
             prop.load(is);
         } catch (IOException ex) {
             return false;
@@ -71,7 +63,11 @@ public class ServerNode extends PrintBaseClass {
         if(!prop.contains(DEVICE + "uuid")) {
             _uuid = UUID.randomUUID();
             prop.setProperty(DEVICE + "uuid", _uuid.toString());
-
+            try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
+                prop.store(outputStream, "Added UUID");
+            } catch (IOException ex) {
+                return false;
+            }
         } else {
             _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid"));
         }
