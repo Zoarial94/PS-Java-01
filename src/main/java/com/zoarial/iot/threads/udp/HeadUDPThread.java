@@ -2,9 +2,13 @@ package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.ServerServer;
+import com.zoarial.iot.dao.IoTNodeDAO;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -17,11 +21,13 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
     private static final AtomicInteger idNumber = new AtomicInteger(0);
 
     final private DatagramSocketHelper _datagramSocketHelper;
+    final private IoTNodeDAO ioTNodeDAO;
 
     public HeadUDPThread(ServerServer server, DatagramSocketHelper datagramSocketHelper) {
         super("HeadUDPThread" + idNumber.getAndIncrement());
         _datagramSocketHelper = datagramSocketHelper;
         _server = server;
+        ioTNodeDAO = new IoTNodeDAO();
     }
 
     public void run() {
@@ -55,29 +61,32 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
 
     void HeadUDPHandler(DatagramPacket dp) {
 
-        byte[] data = dp.getData();
-        if (new String(data, 0, 4).equals("ZIoT")) {
-            println("Is Z-IoT Packet.");
-        } else {
-            println("Is not Z-IoT packet.");
-            return;
-        }
-
-        int node = data[7];
-        String hostname = new String(data, 8, 24);
-
-        println("Node type is: " + node);
-        println("Hostname is: " + hostname);
-
-        byte[] response = new byte[16];
-        System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
-
-        System.arraycopy(_server.getIP().getAddress(), 0, response, 4, 4);
-
-        DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _server.getPort());
-
-
+        DatagramPacketHelper dpHelper = new DatagramPacketHelper(dp);
+        final byte[] HEADER = "ZIoT".getBytes(StandardCharsets.UTF_8);
         try {
+            if(Arrays.compare(HEADER, dpHelper.readBytes(4)) == 0) {
+                println("Is Z-IoT Packet.");
+            } else {
+                println("Is not Z-IoT packet.");
+                return;
+            }
+
+            byte node = dpHelper.readByte();
+            String hostname = dpHelper.readString();
+            UUID uuid = dpHelper.readUUID();
+
+            println("Node type is: " + node);
+            println("Hostname is: " + hostname);
+            println("UUID is: " + uuid);
+
+            byte[] response = new byte[16];
+            System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
+
+            System.arraycopy(_server.getIP().getAddress(), 0, response, 4, 4);
+
+            DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _server.getPort());
+
+
             _datagramSocketHelper.send(dpResponse);
         } catch (IOException e) {
             e.printStackTrace();

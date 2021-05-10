@@ -21,7 +21,7 @@ public class IoTActionDAO extends PrintBaseClass {
         emf = DAOHelper.getEntityManagerFactory();
     }
 
-    public synchronized void persist(IoTAction action) {
+    public void persist(IoTAction action) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
         try {
@@ -35,11 +35,11 @@ public class IoTActionDAO extends PrintBaseClass {
             println("Could not commit action to database.");
         }
 
-        if(em.isOpen()) {
-            em.close();
-        }
         if(transaction.isActive()) {
             transaction.rollback();
+        }
+        if(em.isOpen()) {
+            em.close();
         }
 
     }
@@ -57,6 +57,9 @@ public class IoTActionDAO extends PrintBaseClass {
         // Actual query
         TypedQuery<IoTAction> typedQuery = em.createQuery(select);
         List<IoTAction> resultList = typedQuery.getResultList();
+
+        em.close();
+
         return new IoTActionList(resultList);
 
     }
@@ -78,6 +81,9 @@ public class IoTActionDAO extends PrintBaseClass {
         TypedQuery<ScriptIoTAction> typedQuery = em.createQuery(select);
         typedQuery.setParameter(nameParameter, name);
         List<ScriptIoTAction> resultList = typedQuery.getResultList();
+
+        em.close();
+
         if(resultList.size() > 1) {
             println("Found multiple actions for one name... Something isn't right.");
             return null;
@@ -104,6 +110,9 @@ public class IoTActionDAO extends PrintBaseClass {
         TypedQuery<JavaIoTAction> typedQuery = em.createQuery(select);
         typedQuery.setParameter(nameParameter, name);
         List<JavaIoTAction> resultList = typedQuery.getResultList();
+
+        em.close();
+
         if(resultList.size() > 1) {
             println("Found multiple actions for one name... Something isn't right.");
             return null;
@@ -129,6 +138,9 @@ public class IoTActionDAO extends PrintBaseClass {
         TypedQuery<IoTAction> typedQuery = em.createQuery(select);
         typedQuery.setParameter(nameParameter, name);
         List<IoTAction> resultList = typedQuery.getResultList();
+
+        em.close();
+
         if(resultList.size() > 1) {
             println("Found multiple actions for one name... Something isn't right.");
             return null;

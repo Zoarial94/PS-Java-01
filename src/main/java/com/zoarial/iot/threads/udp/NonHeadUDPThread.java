@@ -2,6 +2,7 @@ package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.ServerServer;
+import com.zoarial.iot.models.IoTPacketSectionList;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -40,12 +41,13 @@ public class NonHeadUDPThread extends PrintBaseClass implements Runnable {
         //Find head, either by reading from a save file, or a broadcast.
         while(!_server.isClosed()) {
 
-            byte[] buf = new byte[32];
-            System.arraycopy("ZIoT".getBytes(), 0, buf, 0, 4);
-            buf[7] = (byte)_server.getNodeType();
-            System.arraycopy(_server.getHostname().getBytes(), 0, buf, 8, Math.min(24, _server.getHostname().length()));
+            IoTPacketSectionList sectionList = new IoTPacketSectionList();
+            sectionList.add("ZIoT");
+            sectionList.add(_server.getNodeType());
+            sectionList.add(_server.getHostname());
+            sectionList.add(_server.getUUID());
 
-            //printArray(buf);
+            byte[] buf = sectionList.getNetworkResponse();
 
             byte[] addr = {10, 94, 50, (byte) 146};
             println("Sending packet...");

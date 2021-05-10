@@ -68,7 +68,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
                 if(read != 4) {
                     return;
                 }
-                int cmp = Arrays.compare(HEADER.getBytes(), 0, 4, buf, 0, 4);
+                int cmp = Arrays.compare(HEADER.getBytes(), buf);
                 if(cmp != 0) {
                     return;
                 }

@@ -28,7 +28,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     final private int _serverPort;
     final private boolean _isHeadCapable;
     final private InetAddress _serverIP;
-    final private UUID _uuid = UUID.randomUUID();
+    final private UUID _uuid;
 
     final private AtomicBoolean _started = new AtomicBoolean(false);
     final private AtomicBoolean _close = new AtomicBoolean(false);
@@ -54,12 +54,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     DatagramSocketHelper _datagramSocketHelper;
 
 
-    public ServerServer(String hostname, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) throws Exception {
+    public ServerServer(String hostname, UUID uuid, int nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) throws Exception {
         super("ServerServer");
 
         println("Initializing...");
 
         _hostname = hostname;
+        _uuid = uuid;
+
         _nodeType = nodeType;
         _isVolatile = isVolatile;
         _serverPort = serverPort;
@@ -173,7 +175,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         createAndStartNewThread(new NonHeadUDPThread(this, _datagramSocketHelper));
-        //new Thread(new NonHeadTCPThread(this, ))
 
     }
 

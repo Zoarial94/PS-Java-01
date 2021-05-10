@@ -7,6 +7,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import java.util.UUID;
 
 import static com.zoarial.iot.ServerPublic.*;
 
@@ -28,6 +29,7 @@ public class ServerNode extends PrintBaseClass {
     boolean _isVolatile;
     int _serverPort;
     boolean _isHeadCapable;
+    UUID _uuid;
 
     //Server can update these at runtime
     int _messageTimeout;
@@ -66,8 +68,16 @@ public class ServerNode extends PrintBaseClass {
             println("Config file is not the correct version");
             return false;
         }
+        if(!prop.contains(DEVICE + "uuid")) {
+            _uuid = UUID.randomUUID();
+            prop.setProperty(DEVICE + "uuid", _uuid.toString());
+
+        } else {
+            _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid"));
+        }
 
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
+
         _nodeType = Integer.parseInt(prop.getProperty(DEVICE + "node_type", "0"));
         _isVolatile = Boolean.parseBoolean(prop.getProperty(DEVICE + "is_volatile", "true"));
         _serverPort = Integer.parseInt(prop.getProperty(DEVICE + "port", "9494"));
@@ -90,7 +100,7 @@ public class ServerNode extends PrintBaseClass {
 
         //  May throw
         try {
-            _server = new ServerServer(_hostname, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
+            _server = new ServerServer(_hostname, _uuid, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
