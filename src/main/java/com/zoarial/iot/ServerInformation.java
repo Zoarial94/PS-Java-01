@@ -30,7 +30,11 @@ public class ServerInformation {
         return Objects.hash(hostname, uuid, nodeType, isVolatile, serverPort, isHeadCapable, messageTimeout, pingTimeout, headNodes);
     }
 
-    ServerInformation(String hostname, UUID uuid, byte nodeType,
+    public ServerInformation(ServerInformation info) {
+        this(info.hostname, info.uuid, info.nodeType, info.serverPort, info.isVolatile, info.isHeadCapable, info.messageTimeout, info.pingTimeout, info.headNodes);
+    }
+
+    public ServerInformation(String hostname, UUID uuid, byte nodeType,
                       int serverPort, boolean isVolatile, boolean isHeadCapable,
                       int messageTimeout, int pingTimeout, List<InetAddress> headNodes) {
 

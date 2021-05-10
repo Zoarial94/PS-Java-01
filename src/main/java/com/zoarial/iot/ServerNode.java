@@ -86,8 +86,8 @@ public class ServerNode extends PrintBaseClass {
             headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode1", "0.0.0.0")));
             headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode2", "0.0.0.0")));
             headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode3", "0.0.0.0")));
-        } catch (UnknownHostException ignored) {
-
+        } catch (UnknownHostException ex) {
+            ex.printStackTrace();
         }
 
         println("Hostname is " + _hostname);
@@ -103,8 +103,8 @@ public class ServerNode extends PrintBaseClass {
 
         //  May throw
         try {
-            oldInfo = new ServerInformation(_hostname, _uuid, _nodeType, _serverPort, _isVolatile, _isHeadCapable,_messageTimeout, _pingTimeout, new ArrayList<>());
-            _server = new ServerServer(oldInfo);
+            oldInfo = new ServerInformation(_hostname, _uuid, _nodeType, _serverPort, _isVolatile, _isHeadCapable,_messageTimeout, _pingTimeout, headNodes);
+            _server = new ServerServer(new ServerInformation(oldInfo));
         } catch (Exception e) {
             e.printStackTrace();
             return false;

@@ -120,6 +120,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                             if(Arrays.equals(servAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
                                 println("Replacing server address...");
                                 _server.getInfo().headNodes.set(i, headAddr);
+                                break;
                             }
                         }
                     }
