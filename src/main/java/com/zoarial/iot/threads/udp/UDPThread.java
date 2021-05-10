@@ -16,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /*
  * This thread shouldn't have to be multithreaded, but could be.
  */
-public class HeadUDPThread extends PrintBaseClass implements Runnable {
+public class UDPThread extends PrintBaseClass implements Runnable {
 
     private final ServerServer _server;
     private static final AtomicInteger idNumber = new AtomicInteger(0);
@@ -24,7 +24,7 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
     final private DatagramSocketHelper _datagramSocketHelper;
     final private IoTNodeDAO ioTNodeDAO;
 
-    public HeadUDPThread(ServerServer server, DatagramSocketHelper datagramSocketHelper) {
+    public UDPThread(ServerServer server, DatagramSocketHelper datagramSocketHelper) {
         super("HeadUDPThread" + idNumber.getAndIncrement());
         _datagramSocketHelper = datagramSocketHelper;
         _server = server;
@@ -33,10 +33,18 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
 
     public void run() {
 
+        if(_server.isHeadCapable()) {
+            headUDPLoop();
+        } else {
+            nonHeadUDPLoop();
+        }
+
+    }
+
+    void headUDPLoop() {
         /*
          * LOOP
          */
-        int sleepTime = 5000;
         DatagramPacket dp;
         while (!_server.isClosed()) {
             /*
@@ -56,11 +64,15 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
             }
             //String str = ServerServer.buildString(dp.getData()).toString();
             //println("Datagram Packet: " + str);
-            HeadUDPHandler(dp);
+            replyHeadNodes(dp);
         }
     }
 
-    void HeadUDPHandler(DatagramPacket dp) {
+    void nonHeadUDPLoop() {
+
+    }
+
+    void replyHeadNodes(DatagramPacket dp) {
 
         DatagramPacketHelper dpHelper = new DatagramPacketHelper(dp);
         final byte[] HEADER = "ZIoT".getBytes(StandardCharsets.UTF_8);

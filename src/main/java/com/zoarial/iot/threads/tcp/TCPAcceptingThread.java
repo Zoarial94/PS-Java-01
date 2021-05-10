@@ -7,13 +7,13 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
+public class TCPAcceptingThread extends PrintBaseClass implements Runnable {
     private final ServerServer _server;
     private static final AtomicBoolean _started = new AtomicBoolean(false);
     private final ServerSocketHelper _serverSocketHelper;
     ArrayList<SocketHelper> _inSockets = new ArrayList<>();
 
-    public HeadTCPAcceptingThread(ServerServer server, ServerSocketHelper _helper) {
+    public TCPAcceptingThread(ServerServer server, ServerSocketHelper _helper) {
         super("HeadTCPAcceptingThread");
         _serverSocketHelper = _helper;
         _server = server;
@@ -30,7 +30,7 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
             loop();
 
             // Since the server is closing, interrupt all created threads (That are still running)
-            for(Thread t : HeadTCPThread.getThreads()) {
+            for(Thread t : TCPThread.getThreads()) {
                 t.interrupt();
             }
         } else {
@@ -53,7 +53,7 @@ public class HeadTCPAcceptingThread extends PrintBaseClass implements Runnable {
 
             // HeadTCPThread manages its own threads list.
             // Since they come and go, it is easier to let each thread add/remove itself
-            new Thread(new HeadTCPThread(_server, new SocketHelper(socket))).start();
+            new Thread(new TCPThread(_server, new SocketHelper(socket))).start();
 
         }
 

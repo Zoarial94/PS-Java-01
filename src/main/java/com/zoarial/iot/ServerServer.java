@@ -5,11 +5,10 @@ import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.dao.IoTActionDAO;
 import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.actions.*;
-import com.zoarial.iot.threads.tcp.HeadTCPAcceptingThread;
+import com.zoarial.iot.threads.tcp.TCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
 import com.zoarial.iot.threads.udp.DatagramSocketHelper;
-import com.zoarial.iot.threads.udp.HeadUDPThread;
-import com.zoarial.iot.threads.udp.NonHeadUDPThread;
+import com.zoarial.iot.threads.udp.UDPThread;
 
 import java.io.*;
 import java.net.*;
@@ -36,6 +35,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     final private IoTActionList listOfActions = new IoTActionList();
     final private IoTActionList actionsInQuestion = new IoTActionList();
+    final private List<InetAddress> headNodes = new ArrayList<>(3);
     private long startTime;
 
     //Server can update these at runtime
@@ -128,57 +128,30 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         if (_started.compareAndSet(false, true)) {
             println("Starting...");
             startTime = System.currentTimeMillis();
-            if (_isHeadCapable) {
-                runHeadCapable();
-            } else {
-                runNotHeadCapable();
+
+            try {
+                println("Starting a server on port " + _serverPort + ".");
+
+                _serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(_serverPort));
+                createAndStartNewThread(_serverSocketHelper);
+
+                _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
+                createAndStartNewThread(_datagramSocketHelper);
+
+            } catch(IOException ex) {
+                System.out.println("Something happened when starting the server. Exiting.");
+                System.exit(-1);
             }
+
+            /*
+             * Start Threads
+             */
+
+            createAndStartNewThread(new UDPThread(this, _datagramSocketHelper));
+            createAndStartNewThread(new TCPAcceptingThread(this, _serverSocketHelper));
         } else {
             println("Server Already started.");
         }
-
-    }
-
-    private void runHeadCapable() {
-        /*
-         * SETUP
-         * Create socket helpers, then assign the helpers to the threads.
-         * The socket helpers are thread-safe and can block while the thread waits.
-         */
-        try {
-            println("Starting a server on port " + _serverPort + ".");
-
-            _serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(_serverPort));
-            createAndStartNewThread(_serverSocketHelper);
-
-            _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
-            createAndStartNewThread(_datagramSocketHelper);
-
-        } catch(IOException ex) {
-            System.out.println("Something happened when starting the server. Exiting.");
-            System.exit(-1);
-        }
-
-        /*
-         * Start Threads
-         */
-
-        createAndStartNewThread(new HeadUDPThread(this, _datagramSocketHelper));
-        createAndStartNewThread(new HeadTCPAcceptingThread(this, _serverSocketHelper));
-
-    }
-
-    private void runNotHeadCapable() {
-
-        try {
-            _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
-            createAndStartNewThread(_datagramSocketHelper);
-        } catch (SocketException e) {
-            e.printStackTrace();
-        }
-
-        createAndStartNewThread(new NonHeadUDPThread(this, _datagramSocketHelper));
-
     }
 
     private void generateIoTActions() {
@@ -298,20 +271,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         threads.add(t);
     }
 
-    public static StringBuilder buildString(byte[] a)
-    {
-        if (a == null)
-            return null;
-        StringBuilder ret = new StringBuilder();
-        int i = 0;
-        while (a[i] != 0)
-        {
-            ret.append((char) a[i]);
-            i++;
-        }
-        return ret;
-    }
-
     public static void printArray(byte[] arr) {
         printArray(arr, arr.length);
     }
@@ -387,12 +346,16 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
 
         if(join) {
-            for (Thread t : threads) {
-                try {
-                    t.join();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+            join();
+        }
+    }
+
+    public void join() {
+        for (Thread t : threads) {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
     }

@@ -123,7 +123,11 @@ public class ServerNode extends PrintBaseClass {
 
     public void close(boolean join) {
         _close = true;
-        _server.close(join);
+        _server.close();
+        //TODO: check ServerServer for changes and then save those changes to the .config file
+        if(join) {
+            _server.join();
+        }
     }
 
     public void close() {

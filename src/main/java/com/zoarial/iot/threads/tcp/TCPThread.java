@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 // TODO: redo the logic here. It may not close properly in all cases.
-public class HeadTCPThread extends PrintBaseClass implements Runnable {
+public class TCPThread extends PrintBaseClass implements Runnable {
 
     private final ServerServer _server;
     private static final AtomicInteger idNumber = new AtomicInteger(0);
@@ -27,7 +27,7 @@ public class HeadTCPThread extends PrintBaseClass implements Runnable {
 
     SocketHelper _inSocket;
 
-    public HeadTCPThread(ServerServer server, SocketHelper inSocket) {
+    public TCPThread(ServerServer server, SocketHelper inSocket) {
 
         super("HeadTCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
