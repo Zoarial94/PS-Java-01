@@ -2,14 +2,16 @@ package com.zoarial.iot.models;
 
 import com.zoarial.iot.models.actions.IoTAction;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-import javax.persistence.Id;
-import javax.persistence.OneToMany;
+import javax.persistence.*;
 import java.util.List;
 import java.util.UUID;
 
 @Entity
+@NamedQueries({
+        @NamedQuery(name = "getAll", query = "SELECT n FROM IoTNode n"),
+        @NamedQuery(name = "getByUUID", query = "SELECT n FROM IoTNode n WHERE n.uuid = :uuid"),
+        @NamedQuery(name = "getByName", query = "SELECT n FROM IoTNode n WHERE n.hostname = :hostname"),
+})
 public class IoTNode {
     @Id
     @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
@@ -22,6 +24,10 @@ public class IoTNode {
 
     @OneToMany
     List<IoTAction> actions;
+
+    public IoTNode() {
+
+    }
 
     public IoTNode(String hostname, UUID uuid, byte nodeType) {
         this.hostname = hostname;
@@ -47,6 +53,22 @@ public class IoTNode {
 
     public byte getNodeType() {
         return nodeType;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public void setHostname(String hostname) {
+        this.hostname = hostname;
+    }
+
+    public List<IoTAction> getActions() {
+        return actions;
+    }
+
+    public void setActions(List<IoTAction> actions) {
+        this.actions = actions;
     }
 
     public UUID getUuid() {

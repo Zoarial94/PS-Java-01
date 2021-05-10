@@ -94,6 +94,8 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
             if(!ioTNodeDAO.containsNode(newNode)) {
                 newNode.setLastHeardFrom(System.currentTimeMillis());
                 ioTNodeDAO.persist(newNode);
+            } else {
+                ioTNodeDAO.updateTimestamp(uuid, System.currentTimeMillis());
             }
 
         } catch (IOException e) {

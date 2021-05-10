@@ -372,10 +372,10 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         _close.setOpaque(true);
 
         // Close original sockets
-        if(!_datagramSocketHelper.isClosed()) {
+        if(_datagramSocketHelper != null && !_datagramSocketHelper.isClosed()) {
             _datagramSocketHelper.close();
         }
-        if(!_serverSocketHelper.isClosed()) {
+        if(_serverSocketHelper != null && !_serverSocketHelper.isClosed()) {
             _serverSocketHelper.close();
         }
 

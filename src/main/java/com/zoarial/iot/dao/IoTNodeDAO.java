@@ -2,14 +2,10 @@ package com.zoarial.iot.dao;
 
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.models.IoTNode;
-import com.zoarial.iot.models.actions.IoTAction;
-import com.zoarial.iot.models.actions.IoTActionList;
 
 import javax.persistence.*;
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
 import java.util.List;
+import java.util.UUID;
 
 public class IoTNodeDAO extends PrintBaseClass {
     private final EntityManagerFactory emf;
@@ -17,6 +13,40 @@ public class IoTNodeDAO extends PrintBaseClass {
     public IoTNodeDAO() {
         super("IoTNodeDAO");
         emf = DAOHelper.getEntityManagerFactory();
+    }
+
+    public List<IoTNode> getAllNodes() {
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<IoTNode> q;
+
+        q = em.createNamedQuery("getAll", IoTNode.class);
+
+        List<IoTNode> resultList = q.getResultList();
+
+        em.close();
+
+        return resultList;
+    }
+
+    public IoTNode getNodeByUUID(UUID uuid) {
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<IoTNode> q;
+
+        q = em.createNamedQuery("getByUUID", IoTNode.class);
+
+        q.setParameter("uuid", uuid);
+
+        List<IoTNode> resultList = q.getResultList();
+
+        em.close();
+
+        if(resultList.size() == 1) {
+            return resultList.get(0);
+        } else {
+            println("Somehow got multiple Nodes for UUID: " + uuid);
+            return null;
+        }
+
     }
 
     public void persist(IoTNode node) {
@@ -43,42 +73,41 @@ public class IoTNodeDAO extends PrintBaseClass {
     }
 
     public boolean containsNode(IoTNode node) {
+        return getNodeByUUID(node.getUuid()) != null;
+    }
+
+    public void updateTimestamp(UUID uuid, long timestamp) {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();
 
-        CriteriaBuilder builder = em.getCriteriaBuilder();
-        CriteriaQuery<IoTNode> query = builder.createQuery(IoTNode.class);
-        Root<IoTNode> root = query.from(IoTNode.class);
-        CriteriaQuery<IoTNode> select = query.select(root).where(builder.equal(root.get("uuid"), node.getUuid()));
+        IoTNode dbNode = getNodeByUUID(uuid);
+        if(dbNode == null) {
+            return;
+        } else if(dbNode.getLastHeardFrom() > timestamp) {
+            return;
+        } else {
 
-        // Actual query
-        TypedQuery<IoTNode> typedQuery = em.createQuery(select);
-        List<IoTNode> resultList = typedQuery.getResultList();
+            dbNode.setLastHeardFrom(timestamp);
 
-        em.close();
+            try {
+                transaction.begin();
+                em.merge(dbNode);
+                transaction.commit();
+            } catch (EntityExistsException ex) {
+                println("Action already exists in the database.");
+            } catch (RollbackException ex) {
+                ex.printStackTrace();
+                println("Could not commit action to database.");
+            }
+            if(transaction.isActive()) {
+                transaction.rollback();
+            }
+        }
 
-        return resultList.size() == 1;
-
-
+        if(em.isOpen()) {
+            em.close();
+        }
     }
 
-    public List<IoTNode> getAllNodes() {
-        EntityManager em = emf.createEntityManager();
-        EntityTransaction transaction = em.getTransaction();
-
-        // Criteria stuff
-        CriteriaBuilder builder = em.getCriteriaBuilder();
-        CriteriaQuery<IoTNode> query = builder.createQuery(IoTNode.class);
-        Root<IoTNode> root = query.from(IoTNode.class);
-        CriteriaQuery<IoTNode> select = query.select(root);
-
-        // Actual query
-        TypedQuery<IoTNode> typedQuery = em.createQuery(select);
-        List<IoTNode> resultList = typedQuery.getResultList();
-
-        em.close();
-
-        return resultList;
-    }
 
 }
