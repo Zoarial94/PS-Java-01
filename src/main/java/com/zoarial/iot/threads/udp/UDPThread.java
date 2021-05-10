@@ -108,6 +108,23 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                         InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
                         InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
 
+                println("Checking for new addresses...");
+                for(InetAddress headAddr : headAddrs) {
+                    println("Address: " + headAddr);
+                    if(!Arrays.equals(headAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
+                        println("Found address: " + headAddr);
+                        int size = _server.getInfo().headNodes.size();
+                        for(int i = 0; i < size; i++) {
+                            InetAddress servAddr = _server.getInfo().headNodes.get(i);
+                            println("Comparing: " + servAddr);
+                            if(Arrays.equals(servAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
+                                println("Replacing server address...");
+                                _server.getInfo().headNodes.set(i, headAddr);
+                            }
+                        }
+                    }
+                }
+
                 ServerServer.printArray(data, dp.getLength());
 
                 for(InetAddress i : headAddrs) {

@@ -21,26 +21,17 @@ import java.util.stream.Stream;
 
 public class ServerServer extends PrintBaseClass implements Runnable {
 
-    final private String _hostname;
-    final private byte _nodeType;
-    final private boolean _isVolatile;
-    final private int _serverPort;
-    final private boolean _isHeadCapable;
-    final private InetAddress _serverIP;
-    final private UUID _uuid;
+    final private ServerInformation serverInfo;
 
     final private AtomicBoolean _started = new AtomicBoolean(false);
     final private AtomicBoolean _close = new AtomicBoolean(false);
 
+    final private InetAddress _serverIP;
+
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     final private IoTActionList listOfActions = new IoTActionList();
     final private IoTActionList actionsInQuestion = new IoTActionList();
-    final private List<InetAddress> headNodes = new ArrayList<>(3);
     private long startTime;
-
-    //Server can update these at runtime
-    int _messageTimeout;
-    int _pingTimeout;
 
     /*
      *
@@ -54,23 +45,15 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     DatagramSocketHelper _datagramSocketHelper;
 
 
-    public ServerServer(String hostname, UUID uuid, byte nodeType, Boolean isVolatile, int serverPort, int messageTimeout, int pingTimeout, boolean isHeadCapable) throws Exception {
+    public ServerServer(ServerInformation info) throws Exception {
         super("ServerServer");
 
         println("Initializing...");
 
-        _hostname = hostname;
-        _uuid = uuid;
+        serverInfo = info;
 
-        _nodeType = nodeType;
-        _isVolatile = isVolatile;
-        _serverPort = serverPort;
-        _isHeadCapable = isHeadCapable;
 
-        _messageTimeout = messageTimeout;
-        _pingTimeout = pingTimeout;
-
-        if(!_isHeadCapable) {
+        if(!serverInfo.isHeadCapable) {
             // I need to use a different database when running the non-head
             DAOHelper.setEntityManagerFactory("ZIoTNonHead");
         }
@@ -130,12 +113,12 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             startTime = System.currentTimeMillis();
 
             try {
-                println("Starting a server on port " + _serverPort + ".");
+                println("Starting a server on port " + serverInfo.serverPort + ".");
 
-                _serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(_serverPort));
+                _serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(serverInfo.serverPort));
                 createAndStartNewThread(_serverSocketHelper);
 
-                _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(_serverPort));
+                _datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(serverInfo.serverPort));
                 createAndStartNewThread(_datagramSocketHelper);
 
             } catch(IOException ex) {
@@ -308,19 +291,19 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public int getPort() {
-        return _serverPort;
+        return serverInfo.serverPort;
     }
 
     public byte getNodeType() {
-        return _nodeType;
+        return serverInfo.nodeType;
     }
 
     public String getHostname() {
-        return _hostname;
+        return serverInfo.hostname;
     }
 
     public UUID getUUID() {
-        return _uuid;
+        return serverInfo.uuid;
     }
 
     public void close() {
@@ -365,11 +348,15 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public boolean isVolatile() {
-        return _isVolatile;
+        return serverInfo.isVolatile;
+    }
+
+    public ServerInformation getInfo() {
+        return serverInfo;
     }
 
     public boolean isHeadCapable() {
-        return _isHeadCapable;
+        return serverInfo.isHeadCapable;
     }
 
 }

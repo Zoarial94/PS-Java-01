@@ -3,6 +3,10 @@ package com.zoarial.iot;
 import com.zoarial.PrintBaseClass;
 
 import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
@@ -34,6 +38,9 @@ public class ServerNode extends PrintBaseClass {
     String _logFileName;
     int _loggingLevel;
 
+    List<InetAddress> headNodes = new ArrayList<>(3);
+
+    ServerInformation oldInfo;
 
     public ServerNode() {
         super("ServerNode");
@@ -60,17 +67,8 @@ public class ServerNode extends PrintBaseClass {
             println("Config file is not the correct version");
             return false;
         }
-        if(!prop.containsKey(DEVICE + "uuid")) {
-            _uuid = UUID.randomUUID();
-            prop.setProperty(DEVICE + "uuid", _uuid.toString());
-            try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
-                prop.store(outputStream, "Added UUID");
-            } catch (IOException ex) {
-                return false;
-            }
-        } else {
-            _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid"));
-        }
+
+        _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid", UUID.randomUUID().toString()));
 
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
 
@@ -84,6 +82,14 @@ public class ServerNode extends PrintBaseClass {
         _logFileName = prop.getProperty(LOGGING + "file_name", "/var/log/PS-Java-Test.log");
         _loggingLevel = Integer.parseInt(prop.getProperty(LOGGING + "level", "1"));
 
+        try {
+            headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode1", "0.0.0.0")));
+            headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode2", "0.0.0.0")));
+            headNodes.add(InetAddress.getByName(prop.getProperty(DEVICE + "headNode3", "0.0.0.0")));
+        } catch (UnknownHostException ignored) {
+
+        }
+
         println("Hostname is " + _hostname);
         println("Node Type is " + _nodeType);
         println("isVolatile is " + _isVolatile);
@@ -93,10 +99,12 @@ public class ServerNode extends PrintBaseClass {
         println("Log file name is " + _logFileName);
         println("Logging Level is " + _loggingLevel);
         println("isHeadCapable is " + _isHeadCapable);
+        println("headNodes is " + headNodes);
 
         //  May throw
         try {
-            _server = new ServerServer(_hostname, _uuid, _nodeType, _isVolatile, _serverPort, _messageTimeout, _pingTimeout, _isHeadCapable);
+            oldInfo = new ServerInformation(_hostname, _uuid, _nodeType, _serverPort, _isVolatile, _isHeadCapable,_messageTimeout, _pingTimeout, new ArrayList<>());
+            _server = new ServerServer(oldInfo);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -125,6 +133,18 @@ public class ServerNode extends PrintBaseClass {
         _close = true;
         _server.close();
         //TODO: check ServerServer for changes and then save those changes to the .config file
+        ServerInformation serverInfo = _server.getInfo();
+        if(!serverInfo.equals(oldInfo)) {
+            println("Updating config file.");
+            prop.setProperty(DEVICE + "uuid", serverInfo.uuid.toString());
+            prop.setProperty(DEVICE + "headNode1", serverInfo.headNodes.get(0).toString());
+            prop.setProperty(DEVICE + "headNode2", serverInfo.headNodes.get(1).toString());
+            prop.setProperty(DEVICE + "headNode3", serverInfo.headNodes.get(2).toString());
+            try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
+                prop.store(outputStream, "Updated");
+            } catch (IOException ignored) {
+            }
+        }
         if(join) {
             _server.join();
         }
