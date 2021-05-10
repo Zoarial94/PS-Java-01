@@ -25,7 +25,7 @@ public class ServerNode extends PrintBaseClass {
 
     //Server should reset if any of these change
     String _hostname;
-    int _nodeType;
+    byte _nodeType;
     boolean _isVolatile;
     int _serverPort;
     boolean _isHeadCapable;
@@ -78,7 +78,7 @@ public class ServerNode extends PrintBaseClass {
 
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
 
-        _nodeType = Integer.parseInt(prop.getProperty(DEVICE + "node_type", "0"));
+        _nodeType = Byte.parseByte(prop.getProperty(DEVICE + "node_type", "0"));
         _isVolatile = Boolean.parseBoolean(prop.getProperty(DEVICE + "is_volatile", "true"));
         _serverPort = Integer.parseInt(prop.getProperty(DEVICE + "port", "9494"));
         _messageTimeout = Integer.parseInt(prop.getProperty(DEVICE + "message_timeout", "300"));
