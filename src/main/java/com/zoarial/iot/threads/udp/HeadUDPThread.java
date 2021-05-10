@@ -92,6 +92,7 @@ public class HeadUDPThread extends PrintBaseClass implements Runnable {
 
             IoTNode newNode = new IoTNode(hostname, uuid, nodeType);
             if(!ioTNodeDAO.containsNode(newNode)) {
+                newNode.setLastHeardFrom(System.currentTimeMillis());
                 ioTNodeDAO.persist(newNode);
             }
 

@@ -60,7 +60,7 @@ public class ServerNode extends PrintBaseClass {
             println("Config file is not the correct version");
             return false;
         }
-        if(!prop.contains(DEVICE + "uuid")) {
+        if(!prop.containsKey(DEVICE + "uuid")) {
             _uuid = UUID.randomUUID();
             prop.setProperty(DEVICE + "uuid", _uuid.toString());
             try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
