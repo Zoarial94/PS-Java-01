@@ -1,6 +1,7 @@
 package com.zoarial.iot;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -31,7 +32,7 @@ public class ServerInformation {
     }
 
     public ServerInformation(ServerInformation info) {
-        this(info.hostname, info.uuid, info.nodeType, info.serverPort, info.isVolatile, info.isHeadCapable, info.messageTimeout, info.pingTimeout, info.headNodes);
+        this(info.hostname, info.uuid, info.nodeType, info.serverPort, info.isVolatile, info.isHeadCapable, info.messageTimeout, info.pingTimeout, new ArrayList<>(info.headNodes));
     }
 
     public ServerInformation(String hostname, UUID uuid, byte nodeType,
