@@ -137,9 +137,9 @@ public class ServerNode extends PrintBaseClass {
         if(!serverInfo.equals(oldInfo)) {
             println("Updating config file.");
             prop.setProperty(DEVICE + "uuid", serverInfo.uuid.toString());
-            prop.setProperty(DEVICE + "headNode1", serverInfo.headNodes.get(0).toString());
-            prop.setProperty(DEVICE + "headNode2", serverInfo.headNodes.get(1).toString());
-            prop.setProperty(DEVICE + "headNode3", serverInfo.headNodes.get(2).toString());
+            prop.setProperty(DEVICE + "headNode1", serverInfo.headNodes.get(0).getHostAddress());
+            prop.setProperty(DEVICE + "headNode2", serverInfo.headNodes.get(1).getHostAddress());
+            prop.setProperty(DEVICE + "headNode3", serverInfo.headNodes.get(2).getHostAddress());
             try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
                 prop.store(outputStream, "Updated");
             } catch (IOException ignored) {

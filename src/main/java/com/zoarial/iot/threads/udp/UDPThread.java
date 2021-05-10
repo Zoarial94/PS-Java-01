@@ -117,7 +117,10 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                         for(int i = 0; i < size; i++) {
                             InetAddress servAddr = _server.getInfo().headNodes.get(i);
                             println("Comparing: " + servAddr);
-                            if(Arrays.equals(servAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
+                            if(Arrays.equals(servAddr.getAddress(), headAddr.getAddress())) {
+                                // We already have this address in the list.
+                                break;
+                            } else if(Arrays.equals(servAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
                                 println("Replacing server address...");
                                 _server.getInfo().headNodes.set(i, headAddr);
                                 break;
