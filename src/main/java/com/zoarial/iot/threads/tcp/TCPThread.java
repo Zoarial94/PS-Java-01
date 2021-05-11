@@ -37,6 +37,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     public void run() {
         // TODO: have some way to add and remove the socket to the list
         // We could then close the socket and have it flush before the ServerSocket is closed
+        // UPDATE: we should use shutdown to shutdown the input, then clean up, then close.
         threads.add(Thread.currentThread());
         println("Starting connection with: " + _inSocket.inSocket.getRemoteSocketAddress());
         try { // This might be unnecessary, but better safe than sorry
@@ -66,10 +67,12 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                 // See if the first 4 bytes are ZIoT.
                 // If they aren't then close the thread.
                 if(read != 4) {
+                    println("Not enough data.");
                     return;
                 }
-                int cmp = Arrays.compare(HEADER.getBytes(), buf);
+                int cmp = Arrays.compare(HEADER.getBytes(), 0, 4, buf, 0, 4);
                 if(cmp != 0) {
+                    println("Not ZIoT.");
                     return;
                 }
 
@@ -131,6 +134,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                         }
                         case "info" -> {
                             str = _inSocket.readString();
+                            println("Request info: " + str);
                             switch (str) {
                                 case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 case "general" -> {

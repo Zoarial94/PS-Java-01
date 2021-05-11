@@ -30,7 +30,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     final private IoTActionList listOfActions = new IoTActionList();
-    final private IoTActionList actionsInQuestion = new IoTActionList();
+    final private IoTActionList scriptActionsInQuestion = new IoTActionList();
     private long startTime;
 
     /*
@@ -148,22 +148,20 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         ArrayList<JavaIoTAction> javaIoTActions = new ArrayList<>(4);
         javaIoTActions.add(new JavaIoTAction("Stop", (byte)4, true, false, (byte)0, (list)-> {
             System.exit(0);
-            return "";
+            return "Stopping...";
         }));
         javaIoTActions.add(new JavaIoTAction("Shutdown", (byte)4, true, true, (byte)0, (list)-> {
             System.exit(0);
-            return "";
+            return "Shutting down...";
         }));
-        javaIoTActions.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> {
-            return String.valueOf(System.currentTimeMillis() - startTime);
-        }));
-        javaIoTActions.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list) -> {
+        javaIoTActions.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> String.valueOf(System.currentTimeMillis() - startTime)));
+        javaIoTActions.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list)-> {
             println("Being asked to print: \"" + list.get(0).getString() + "\"");
             return "printed";
         }));
         javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)1, (list)->{
-            IoTPacketSectionList sectionList = new IoTPacketSectionList(actionsInQuestion.size() * 4);
-            for(IoTAction action : actionsInQuestion) {
+            IoTPacketSectionList sectionList = new IoTPacketSectionList(scriptActionsInQuestion.size() * 4);
+            for(IoTAction action : scriptActionsInQuestion) {
                 sectionList.add(action.getUuid());
                 sectionList.add(action.getName());
                 sectionList.add(action.getSecurityLevel());
@@ -174,14 +172,57 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         javaIoTActions.add(new JavaIoTAction("AddNewScriptToActions", (byte)4, true, true, (byte)1, (list)->{
             UUID uuid = UUID.fromString(list.get(0).getString());
             println("UUID: " + uuid);
-            IoTAction action = actionsInQuestion.remove(uuid);
+
+            ScriptIoTAction action = (ScriptIoTAction) scriptActionsInQuestion.remove(uuid);
             if(action == null) {
-                return "There is no action with that UUID.";
+                return "There is no new action with that UUID.";
             } else {
-                listOfActions.add(action);
-                return "Success.";
+                if(action.isValid()) {
+                    listOfActions.add(action);
+                    return "Success.";
+                } else {
+                    return "That action is not valid.";
+                }
             }
         }));
+        javaIoTActions.add(new JavaIoTAction("UpdateSecurityLevel", (byte)4, true, true, (byte)2, (list)-> {
+            UUID uuid = UUID.fromString(list.get(0).getString());
+            byte level = list.get(1).getByte();
+            if(level > 4 || level < 0) {
+                return "Invalid security level";
+            }
+            IoTAction action = listOfActions.get(uuid);
+            if (action != null) {
+                action.setSecurityLevel(level);
+                ioTActionDAO.update(action);
+                return "Security level set.";
+            } else {
+                return "No action with that UUID found.";
+            }
+        }));
+        javaIoTActions.add(new JavaIoTAction("UpdateEncryptedToggle", (byte)4, true, true, (byte)2, (list)-> {
+            UUID uuid = UUID.fromString(list.get(0).getString());
+            IoTAction action = listOfActions.get(uuid);
+            if (action != null) {
+                action.setEncrypted(list.get(1).getBool());
+                ioTActionDAO.update(action);
+                return "Encryption toggle set.";
+            } else {
+                return "No action with that UUID found.";
+            }
+        }));
+        javaIoTActions.add(new JavaIoTAction("UpdateLocalToggle", (byte)4, true, true, (byte)2, (list)-> {
+            UUID uuid = UUID.fromString(list.get(0).getString());
+            IoTAction action = listOfActions.get(uuid);
+            if (action != null) {
+                action.setLocal(list.get(1).getBool());
+                ioTActionDAO.update(action);
+                return "Security level set.";
+            } else {
+                return "No action with that UUID found.";
+            }
+        }));
+
 
         // If the action was not found, then add it with default permissions
         for(JavaIoTAction action : javaIoTActions) {
@@ -232,14 +273,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                     // Security level should be changed manually by user though other means. (Saved to database)
                     ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
                     println("There is a new script to add to actions:\n" + action);
-                    actionsInQuestion.add(action);
+                    scriptActionsInQuestion.add(action);
                     ioTActionDAO.persist(action);
                 } else {
                     if(dbAction.isValid()) {
                         listOfActions.add(dbAction);
                     } else {
                         println("Script action is no longer valid:\n" + dbAction);
-                        actionsInQuestion.add(dbAction);
+                        scriptActionsInQuestion.add(dbAction);
                     }
                 }
             });
@@ -318,6 +359,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             _datagramSocketHelper.close();
         }
         if(_serverSocketHelper != null && !_serverSocketHelper.isClosed()) {
+            //TODO: shutdown, then close for better cleanup.
             _serverSocketHelper.close();
         }
 

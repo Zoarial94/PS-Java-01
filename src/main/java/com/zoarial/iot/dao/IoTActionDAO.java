@@ -12,6 +12,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import java.util.List;
+import java.util.UUID;
 
 public class IoTActionDAO extends PrintBaseClass {
     private final EntityManagerFactory emf;
@@ -19,6 +20,43 @@ public class IoTActionDAO extends PrintBaseClass {
     public IoTActionDAO() {
         super("IoTActionDAO");
         emf = DAOHelper.getEntityManagerFactory();
+    }
+
+    public IoTAction getActionByUUID(UUID uuid) {
+        EntityManager em = emf.createEntityManager();
+        return em.find(IoTAction.class, uuid);
+    }
+
+    /**
+     *
+     * @param action An action with a UUID in the database.
+     *
+     *               This function updates the security level, encrypted, and local
+     *               variables.
+     *
+     */
+    public void update(IoTAction action) {
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+
+        try {
+            transaction.begin();
+            em.merge(action);
+            transaction.commit();
+        } catch (EntityExistsException ex) {
+            println("Action already exists in the database.");
+        } catch (RollbackException ex) {
+            ex.printStackTrace();
+            println("Could not commit action to database.");
+        }
+
+        if(transaction.isActive()) {
+            transaction.rollback();
+        }
+        if(em.isOpen()) {
+            em.close();
+        }
+
     }
 
     public void persist(IoTAction action) {

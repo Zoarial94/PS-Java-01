@@ -22,12 +22,10 @@ public class ScriptIoTAction extends IoTAction {
     @Column(nullable = false)
     @Convert(converter = com.zoarial.jpa.converters.PathConverter.class)
     Path path;
-    boolean enabled;
 
     public ScriptIoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte args, Path file) {
         super(name, uuid, level, encrypted, local, args);
         path = file;
-        enabled = false;
     }
 
     // TODO: Check file digest (sha1, MD5, etc) for integrity

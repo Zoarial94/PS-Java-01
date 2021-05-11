@@ -1,7 +1,5 @@
 package com.zoarial.iot.models.actions;
 
-import com.zoarial.iot.models.IoTBasicType;
-
 public class IoTActionArgument {
     private String str = "";
     private long l = 0;

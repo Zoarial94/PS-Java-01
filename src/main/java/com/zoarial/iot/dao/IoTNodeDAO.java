@@ -30,23 +30,7 @@ public class IoTNodeDAO extends PrintBaseClass {
 
     public IoTNode getNodeByUUID(UUID uuid) {
         EntityManager em = emf.createEntityManager();
-        TypedQuery<IoTNode> q;
-
-        q = em.createNamedQuery("getByUUID", IoTNode.class);
-
-        q.setParameter("uuid", uuid);
-
-        List<IoTNode> resultList = q.getResultList();
-
-        em.close();
-
-        if(resultList.size() == 1) {
-            return resultList.get(0);
-        } else {
-            println("Somehow got multiple Nodes for UUID: " + uuid);
-            return null;
-        }
-
+        return em.find(IoTNode.class, uuid);
     }
 
     public void persist(IoTNode node) {
@@ -58,7 +42,7 @@ public class IoTNodeDAO extends PrintBaseClass {
             em.persist(node);
             transaction.commit();
         } catch (EntityExistsException ex) {
-            println("Action already exists in the database.");
+            println("Node already exists in the database.");
         } catch (RollbackException ex) {
             ex.printStackTrace();
             println("Could not commit action to database.");
@@ -74,6 +58,30 @@ public class IoTNodeDAO extends PrintBaseClass {
 
     public boolean containsNode(IoTNode node) {
         return getNodeByUUID(node.getUuid()) != null;
+    }
+
+    public void update(IoTNode node) {
+        EntityManager em = emf.createEntityManager();
+        EntityTransaction transaction = em.getTransaction();
+
+        try {
+            transaction.begin();
+            em.merge(node);
+            transaction.commit();
+        } catch (EntityExistsException ex) {
+            println("Node already exists in the database.");
+        } catch (RollbackException ex) {
+            ex.printStackTrace();
+            println("Could not commit action to database.");
+        }
+
+        if(transaction.isActive()) {
+            transaction.rollback();
+        }
+        if(em.isOpen()) {
+            em.close();
+        }
+
     }
 
     public void updateTimestamp(UUID uuid, long timestamp) {
