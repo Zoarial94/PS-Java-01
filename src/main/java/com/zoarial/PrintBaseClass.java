@@ -1,5 +1,8 @@
 package com.zoarial;
 
+import java.time.LocalDateTime;
+
+//TODO: replace with an actual logging framework
 public abstract class PrintBaseClass {
     public static final String ANSI_RESET = "\u001B[0m";
     public static final String ANSI_BLACK = "\u001B[30m";
@@ -26,7 +29,7 @@ public abstract class PrintBaseClass {
     }
 
     protected <T> void println(T var) {
-        System.out.println(ANSI_BLUE + prefix + ANSI_RESET + ": " + var);
+        System.out.println(LocalDateTime.now() + " " + ANSI_BLUE + prefix + ANSI_RESET + ": " + var);
     }
     protected static void println() {
         System.out.println();

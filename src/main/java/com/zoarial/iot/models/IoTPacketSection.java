@@ -60,7 +60,8 @@ public class IoTPacketSection {
             case BYTE -> new byte[]{(byte) num};
             case LONG -> ByteBuffer.allocate(8).putLong(num).array();
             case UUID -> ByteBuffer.allocate(16).putLong(num).putLong(uuid_low).array();
-            case BOOLEAN, STRING -> {
+            //TODO: Decided if i want to add JSONObject to hold the JSON data
+            case BOOLEAN, STRING, JSON -> {
                 byte[] strArr = str.getBytes();
                 int len = strArr.length;
                 byte[] byteArr = new byte[strArr.length + 1];

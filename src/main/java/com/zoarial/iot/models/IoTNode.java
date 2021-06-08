@@ -1,11 +1,16 @@
 package com.zoarial.iot.models;
 
 import com.zoarial.iot.models.actions.IoTAction;
+import lombok.Getter;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
+@Getter
+@Setter
 @Entity
 @NamedQueries({
         @NamedQuery(name = "getAll", query = "SELECT n FROM IoTNode n"),
@@ -29,49 +34,22 @@ public class IoTNode {
 
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof IoTNode)) return false;
+        IoTNode ioTNode = (IoTNode) o;
+        return nodeType == ioTNode.nodeType && uuid.equals(ioTNode.uuid) && hostname.equals(ioTNode.hostname);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(uuid, hostname, nodeType);
+    }
+
     public IoTNode(String hostname, UUID uuid, byte nodeType) {
         this.hostname = hostname;
         this.uuid = uuid;
         this.nodeType = nodeType;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
-
-    public void setNodeType(byte nodeType) {
-        this.nodeType = nodeType;
-    }
-
-    public long getLastHeardFrom() {
-        return lastHeardFrom;
-    }
-
-    public void setLastHeardFrom(long lastHeardFrom) {
-        this.lastHeardFrom = lastHeardFrom;
-    }
-
-    public byte getNodeType() {
-        return nodeType;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public List<IoTAction> getActions() {
-        return actions;
-    }
-
-    public void setActions(List<IoTAction> actions) {
-        this.actions = actions;
-    }
-
-    public UUID getUuid() {
-        return uuid;
     }
 }

@@ -56,7 +56,11 @@ public class ServerNode extends PrintBaseClass {
         try(FileInputStream inputStream = new FileInputStream(CONFIG_FILE)) {
             is = inputStream;
             prop.load(is);
+        } catch (FileNotFoundException ex) {
+            println("Config file not found.");
+            return false;
         } catch (IOException ex) {
+            println("Error reading config file.");
             return false;
         }
 

@@ -1,6 +1,9 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.*;
+import com.zoarial.iot.dao.IoTActionDAO;
+import com.zoarial.iot.dao.IoTNodeDAO;
+import com.zoarial.iot.models.IoTNode;
 import com.zoarial.iot.models.actions.IoTAction;
 import com.zoarial.iot.ServerServer;
 import com.zoarial.iot.models.IoTPacketSectionList;
@@ -25,13 +28,19 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     HashMap<Integer, IoTSession> sessions = new HashMap<>();
     private static final char NULL_BYTE = 0;
 
-    SocketHelper _inSocket;
+    private SocketHelper _inSocket;
+    private IoTNodeDAO ioTNodeDAO;
+    private IoTActionDAO ioTActionDAO;
 
     public TCPThread(ServerServer server, SocketHelper inSocket) {
 
         super("HeadTCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
         _server = server;
+
+        ioTActionDAO = new IoTActionDAO();
+        ioTNodeDAO = new IoTNodeDAO();
+
     }
 
     public void run() {
@@ -98,6 +107,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                         case "action" -> {
                             var actionsList = _server.getListOfActions();
 
+                            UUID uuid = _inSocket.readUUID();
                             String rawJson = _inSocket.readJson();
 
                             JSONObject jsonObject = new JSONObject(rawJson);
@@ -106,7 +116,6 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 securityLevel = 1;
                             }
 
-                            UUID uuid = UUID.fromString(jsonObject.getString("uuid"));
                             JSONArray args = jsonObject.getJSONArray("args");
                             // Check for the action
                             IoTAction action = actionsList.get(uuid);
@@ -136,6 +145,22 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                             str = _inSocket.readString();
                             println("Request info: " + str);
                             switch (str) {
+                                case "action" -> {
+                                    UUID actionUUID = _inSocket.readUUID();
+                                    println("Responding info about action: " + actionUUID);
+                                    IoTAction action = ioTActionDAO.getActionByUUID(actionUUID);
+                                    IoTPacketSectionList sectionList = new IoTPacketSectionList();
+                                    if(action == null) {
+                                        sectionList.add((byte)0);
+                                        sectionList.add("An action with that UUID does not exist.");
+                                        println("Action does not exist.");
+                                    } else {
+                                        println("Responding with action info.");
+                                        sectionList.add((byte)1);
+                                        sectionList.add(action.toJson().toString());
+                                    }
+                                    respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), sectionList);
+                                }
                                 case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 case "general" -> {
                                     IoTPacketSectionList sectionList = new IoTPacketSectionList();
@@ -144,6 +169,9 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                     sectionList.add(_server.isHeadCapable());
                                     sectionList.add(_server.isVolatile());
                                     respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), sectionList);
+                                }
+                                case "nodes" -> {
+                                    respondNodeList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 }
                                 default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + str);
                             }
@@ -205,9 +233,13 @@ public class TCPThread extends PrintBaseClass implements Runnable {
 
         for(IoTAction action : actionList) {
             sectionList.add(action.getUuid());
+            sectionList.add(action.getNode().getUuid());
             sectionList.add(action.getName());
+            //sectionList.add(action.getReturnType())
             sectionList.add(action.getSecurityLevel());
             sectionList.add(action.getArguments());
+            sectionList.add(action.isEncrypted());
+            sectionList.add(action.isLocal());
         }
 
         try {
@@ -216,6 +248,30 @@ public class TCPThread extends PrintBaseClass implements Runnable {
             e.printStackTrace();
         }
 
+    }
+
+    private void respondNodeList(IoTSession session) {
+        IoTNodeDAO ioTNodeDAO = new IoTNodeDAO();
+        var nodeList = ioTNodeDAO.getAllNodes();
+        IoTPacketSectionList sectionList = new IoTPacketSectionList(nodeList.size() * 4 + 3);
+
+
+        sectionList.add("ZIoT");
+        sectionList.add(session.getSessionID());
+        sectionList.add(nodeList.size());
+
+        for(IoTNode node : nodeList) {
+            sectionList.add(node.getUuid());
+            sectionList.add(node.getHostname());
+            sectionList.add(node.getNodeType());
+            sectionList.add(node.getLastHeardFrom());
+        }
+
+        try {
+            _inSocket.out.write(sectionList.getNetworkResponse());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     static List<Thread> getThreads() {

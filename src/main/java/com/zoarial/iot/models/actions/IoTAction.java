@@ -5,6 +5,7 @@ import com.zoarial.iot.models.IoTNode;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.json.JSONArray;
+import org.json.JSONObject;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -16,6 +17,8 @@ import java.util.UUID;
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldDefaults(level = AccessLevel.PROTECTED)
+@Getter
+@Setter
 public abstract class IoTAction implements Serializable {
     // UUID is 16 bytes (128 bits)
     @Id @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
@@ -24,6 +27,7 @@ public abstract class IoTAction implements Serializable {
     protected String name;
     protected String description;
 
+    @Column(nullable = false)
     protected IoTBasicType returnType = IoTBasicType.STRING;
 
     // Default, anyone with the right level can use.
@@ -50,7 +54,7 @@ public abstract class IoTAction implements Serializable {
     protected boolean local;
 
     // If null, then the action belongs to the local node
-    @ManyToOne
+    @ManyToOne(optional = false)
     protected IoTNode node;
 
     protected IoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte arguments) {
@@ -77,7 +81,7 @@ public abstract class IoTAction implements Serializable {
         if(arguments == args.size()) {
             return privExecute(args);
         }
-        throw new IllegalArgumentException("Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
+        throw new IllegalArgumentException("(" + name + ") Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
     }
 
     // Just call the other execute function
@@ -87,71 +91,25 @@ public abstract class IoTAction implements Serializable {
         for(int i = 0; i < len; i++) {
             list.add(args.getString(i));
         }
-        return execute(list);
+        String response = execute(list);
+        if(response.contains("\0")) {
+            throw new RuntimeException("Action response should not have null character");
+        }
+        return response;
     }
 
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public IoTBasicType getReturnType() {
-        return returnType;
-    }
-
-    public void setReturnType(IoTBasicType returnType) {
-        this.returnType = returnType;
-    }
-
-    public byte getSecurityLevel() {
-        return securityLevel;
-    }
-
-    public void setSecurityLevel(byte securityLevel) {
-        this.securityLevel = securityLevel;
-    }
-
-    public byte getArguments() {
-        return arguments;
-    }
-
-    public void setArguments(byte arguments) {
-        this.arguments = arguments;
-    }
-
-    public boolean isEncrypted() {
-        return encrypted;
-    }
-
-    public void setEncrypted(boolean encrypted) {
-        this.encrypted = encrypted;
-    }
-
-    public boolean isLocal() {
-        return local;
-    }
-
-    public void setLocal(boolean local) {
-        this.local = local;
+    public JSONObject toJson() {
+        JSONObject jsonAction = new JSONObject();
+        jsonAction.put("nodeUuid", node.getUuid());
+        jsonAction.put("uuid", uuid);
+        jsonAction.put("name", name);
+        jsonAction.put("description", description);
+        jsonAction.put("returnType", returnType);
+        jsonAction.put("securityLevel", securityLevel);
+        jsonAction.put("arguments", arguments);
+        jsonAction.put("encrypted", encrypted);
+        jsonAction.put("local", local);
+        return jsonAction;
     }
 
     @Override
@@ -173,11 +131,11 @@ public abstract class IoTAction implements Serializable {
         if (this == o) return true;
         if (!(o instanceof IoTAction)) return false;
         IoTAction ioTAction = (IoTAction) o;
-        return securityLevel == ioTAction.securityLevel && arguments == ioTAction.arguments && encrypted == ioTAction.encrypted && local == ioTAction.local && uuid.equals(ioTAction.uuid) && name.equals(ioTAction.name) && Objects.equals(description, ioTAction.description) && returnType == ioTAction.returnType;
+        return securityLevel == ioTAction.securityLevel && arguments == ioTAction.arguments && encrypted == ioTAction.encrypted && local == ioTAction.local && uuid.equals(ioTAction.uuid) && name.equals(ioTAction.name) && Objects.equals(description, ioTAction.description) && returnType == ioTAction.returnType && node.equals(ioTAction.node);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, name, description, returnType, securityLevel, arguments, encrypted, local);
+        return Objects.hash(uuid, name, description, returnType, securityLevel, arguments, encrypted, local, node);
     }
 }

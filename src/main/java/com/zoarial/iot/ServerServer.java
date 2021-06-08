@@ -3,12 +3,18 @@ package com.zoarial.iot;
 import com.zoarial.*;
 import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.dao.IoTActionDAO;
+import com.zoarial.iot.dao.IoTNodeDAO;
+import com.zoarial.iot.models.IoTNode;
 import com.zoarial.iot.models.IoTPacketSectionList;
 import com.zoarial.iot.models.actions.*;
 import com.zoarial.iot.threads.tcp.TCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
 import com.zoarial.iot.threads.udp.DatagramSocketHelper;
 import com.zoarial.iot.threads.udp.UDPThread;
+import lombok.Getter;
+import lombok.Setter;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 import java.io.*;
 import java.net.*;
@@ -19,9 +25,12 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
+@Getter
+@Setter
 public class ServerServer extends PrintBaseClass implements Runnable {
 
     final private ServerInformation serverInfo;
+    final private IoTNode _selfNode;
 
     final private AtomicBoolean _started = new AtomicBoolean(false);
     final private AtomicBoolean _close = new AtomicBoolean(false);
@@ -51,6 +60,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         println("Initializing...");
 
         serverInfo = info;
+        _selfNode = new IoTNode(info.hostname, info.uuid, info.nodeType);
 
 
         if(!serverInfo.isHeadCapable) {
@@ -67,9 +77,13 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         }
         boolean found = false;
         InetAddress tmp = null;
+        //TODO: Create someway to to find a usable interface. Maybe
+        //      this should be user specified.
         while (n.hasMoreElements() && !found) {
             NetworkInterface e = n.nextElement();
-            if(!e.getName().equals("eth0")) {
+            println("Found interface: " + e.getName());
+            if(!e.getName().equals("vlan50")) {
+                println("Skipping interface");
                 continue;
             }
             Enumeration<InetAddress> a = e.getInetAddresses();
@@ -140,6 +154,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     private void generateIoTActions() {
 
         IoTActionDAO ioTActionDAO = new IoTActionDAO();
+        IoTNodeDAO ioTNodeDAO = new IoTNodeDAO();
+
+        IoTNode dbNode = ioTNodeDAO.getNodeByUUID(getUUID());
+        if(dbNode == null) {
+            ioTNodeDAO.persist(_selfNode);
+        } else if(!dbNode.equals(_selfNode)) {
+            ioTNodeDAO.update(_selfNode);
+        }
 
         // List all internal actions
         // We check later whether they are in the database (by name)
@@ -154,20 +176,19 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             System.exit(0);
             return "Shutting down...";
         }));
-        javaIoTActions.add(new JavaIoTAction("GetUptime", (byte)4, true, false, (byte)0, (list)-> String.valueOf(System.currentTimeMillis() - startTime)));
+        javaIoTActions.add(new JavaIoTAction("GetUptime", (byte)0, false, false, (byte)0, (list)-> String.valueOf(System.currentTimeMillis() - startTime)));
         javaIoTActions.add(new JavaIoTAction("Print", (byte)4, true, false, (byte)1, (list)-> {
             println("Being asked to print: \"" + list.get(0).getString() + "\"");
-            return "printed";
+            return "Printed";
         }));
-        javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)1, (list)->{
-            IoTPacketSectionList sectionList = new IoTPacketSectionList(scriptActionsInQuestion.size() * 4);
+        javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)0, (list)->{
+            JSONObject root = new JSONObject();
+            JSONArray actions = new JSONArray();
+            root.put("actions", actions);
             for(IoTAction action : scriptActionsInQuestion) {
-                sectionList.add(action.getUuid());
-                sectionList.add(action.getName());
-                sectionList.add(action.getSecurityLevel());
-                sectionList.add(action.getArguments());
+                actions.put(action.toJson());
             }
-            return new String(sectionList.getNetworkResponse()) + "\0";
+            return root.toString();
         }));
         javaIoTActions.add(new JavaIoTAction("AddNewScriptToActions", (byte)4, true, true, (byte)1, (list)->{
             UUID uuid = UUID.fromString(list.get(0).getString());
@@ -226,13 +247,20 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
         // If the action was not found, then add it with default permissions
         for(JavaIoTAction action : javaIoTActions) {
+            action.setNode(_selfNode);
             JavaIoTAction dbAction = ioTActionDAO.getJavaActionByName(action.getName());
             if(dbAction == null) {
                 action.setUuid(UUID.randomUUID());
+                action.setNode(_selfNode);
                 println("JavaIoTAction was not in database. Adding now:\n" + action);
                 ioTActionDAO.persist(action);
                 listOfActions.add(action);
             } else {
+                // Updated database in the case something has changed
+                action.setUuid(dbAction.getUuid());
+                if(!action.equals(dbAction)) {
+                    ioTActionDAO.update(action);
+                }
                 dbAction.setExec(action.getExec());
                 listOfActions.add(dbAction);
             }
@@ -272,6 +300,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                     // By default use highest security level
                     // Security level should be changed manually by user though other means. (Saved to database)
                     ScriptIoTAction action = new ScriptIoTAction(fileName, UUID.randomUUID(), (byte) 4, true, false, (byte) 0, file);
+                    action.setNode(_selfNode);
                     println("There is a new script to add to actions:\n" + action);
                     scriptActionsInQuestion.add(action);
                     ioTActionDAO.persist(action);

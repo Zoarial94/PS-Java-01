@@ -24,7 +24,9 @@ public class IoTActionDAO extends PrintBaseClass {
 
     public IoTAction getActionByUUID(UUID uuid) {
         EntityManager em = emf.createEntityManager();
-        return em.find(IoTAction.class, uuid);
+        var action = em.find(IoTAction.class, uuid);
+        em.close();
+        return action;
     }
 
     /**

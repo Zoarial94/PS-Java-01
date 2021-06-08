@@ -8,4 +8,5 @@ public enum IoTBasicType {
     UUID,
     HEADER,
     BOOLEAN,
+    JSON,
 }

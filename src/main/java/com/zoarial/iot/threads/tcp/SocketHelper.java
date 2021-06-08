@@ -1,15 +1,12 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.models.actions.IoTAction;
-import com.zoarial.iot.models.actions.IoTActionArgument;
-import com.zoarial.iot.models.actions.IoTActionArgumentList;
 
 import java.io.*;
 import java.net.Socket;
 import java.util.UUID;
 
-class SocketHelper extends PrintBaseClass {
+public class SocketHelper extends PrintBaseClass {
     public final Socket inSocket;
     public final BufferedOutputStream rawOut;
     public final DataOutputStream out;
@@ -116,23 +113,6 @@ class SocketHelper extends PrintBaseClass {
 
         return json.toString();
     }
-
-    public IoTActionArgumentList readArgumentList(IoTAction action) throws IOException {
-
-        IoTActionArgumentList argumentList = new IoTActionArgumentList();
-
-        byte b = in.readByte();
-        while(b != '.') {
-            StringBuilder str = new StringBuilder();
-            while (b != ',' && b != '.') {
-                str.append((char) b);
-                b = in.readByte();
-            }
-            argumentList.add(new IoTActionArgument(str.toString()));
-        }
-        return argumentList;
-    }
-
 
     public boolean isEncrypted() {
         return encrypted;
