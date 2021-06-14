@@ -79,10 +79,11 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         InetAddress tmp = null;
         //TODO: Create someway to to find a usable interface. Maybe
         //      this should be user specified.
+        println("Looking for network device: " + info.networkDeviceName);
         while (n.hasMoreElements() && !found) {
             NetworkInterface e = n.nextElement();
             println("Found interface: " + e.getName());
-            if(!e.getName().equals("vlan50")) {
+            if(!e.getName().equals(info.networkDeviceName)) {
                 println("Skipping interface");
                 continue;
             }

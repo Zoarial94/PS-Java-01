@@ -39,6 +39,7 @@ public class ServerNode extends PrintBaseClass {
     int _loggingLevel;
 
     List<InetAddress> headNodes = new ArrayList<>(3);
+    String _networkDeviceName;
 
     ServerInformation oldInfo;
 
@@ -82,6 +83,7 @@ public class ServerNode extends PrintBaseClass {
         _messageTimeout = Integer.parseInt(prop.getProperty(DEVICE + "message_timeout", "300"));
         _pingTimeout = Integer.parseInt(prop.getProperty(DEVICE + "ping_timeout", "90"));
         _isHeadCapable = Boolean.parseBoolean(prop.getProperty(DEVICE + "is_head_capable", "false"));
+        _networkDeviceName = prop.getProperty(DEVICE + "network_device", "eth0");
 
         _logFileName = prop.getProperty(LOGGING + "file_name", "/var/log/PS-Java-Test.log");
         _loggingLevel = Integer.parseInt(prop.getProperty(LOGGING + "level", "1"));
@@ -107,7 +109,7 @@ public class ServerNode extends PrintBaseClass {
 
         //  May throw
         try {
-            oldInfo = new ServerInformation(_hostname, _uuid, _nodeType, _serverPort, _isVolatile, _isHeadCapable,_messageTimeout, _pingTimeout, headNodes);
+            oldInfo = new ServerInformation(_hostname, _uuid, _nodeType, _serverPort, _isVolatile, _isHeadCapable,_messageTimeout, _pingTimeout, _networkDeviceName, headNodes);
             _server = new ServerServer(new ServerInformation(oldInfo));
         } catch (Exception e) {
             e.printStackTrace();
