@@ -22,13 +22,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class UDPThread extends PrintBaseClass implements Runnable {
 
     private final ServerServer _server;
-    private static final AtomicInteger idNumber = new AtomicInteger(0);
 
     final private DatagramSocketHelper _datagramSocketHelper;
     final private IoTNodeDAO ioTNodeDAO;
 
     public UDPThread(ServerServer server, DatagramSocketHelper datagramSocketHelper) {
-        super("UDPThread" + idNumber.getAndIncrement());
+        super("UDPThread");
         _datagramSocketHelper = datagramSocketHelper;
         _server = server;
         ioTNodeDAO = new IoTNodeDAO();
@@ -36,11 +35,15 @@ public class UDPThread extends PrintBaseClass implements Runnable {
 
     public void run() {
 
+        println("Starting...");
         if(_server.isHeadCapable()) {
+            println("Starting Head Loop.");
             headUDPLoop();
         } else {
+            println("Starting Non-Head Loop.");
             nonHeadUDPLoop();
         }
+        println("Finished.");
 
     }
 
