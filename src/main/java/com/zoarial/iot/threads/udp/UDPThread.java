@@ -11,6 +11,7 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -27,7 +28,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
     final private IoTNodeDAO ioTNodeDAO;
 
     public UDPThread(ServerServer server, DatagramSocketHelper datagramSocketHelper) {
-        super("HeadUDPThread" + idNumber.getAndIncrement());
+        super("UDPThread" + idNumber.getAndIncrement());
         _datagramSocketHelper = datagramSocketHelper;
         _server = server;
         ioTNodeDAO = new IoTNodeDAO();
@@ -47,7 +48,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
         /*
          * LOOP
          */
-        DatagramPacket dp;
+        Optional<DatagramPacket> dp;
         while (!_server.isClosed()) {
             /*
              *
@@ -60,13 +61,13 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                 e.printStackTrace();
                 continue;
             }
-            if(dp == null) {
+            if(dp.isEmpty()) {
                 //println("Timed out.");
                 continue;
             }
             //String str = ServerServer.buildString(dp.getData()).toString();
             //println("Datagram Packet: " + str);
-            replyHeadNodes(dp);
+            replyHeadNodes(dp.get());
         }
     }
 
@@ -83,19 +84,26 @@ public class UDPThread extends PrintBaseClass implements Runnable {
 
             byte[] buf = sectionList.getNetworkResponse();
 
-            byte[] addr = {10, 94, 50, (byte) 146};
+            byte[] addr = {10, 94, 50, (byte) 95};
             println("Sending packet...");
+            Optional<DatagramPacket> optDp;
             DatagramPacket dp;
             try {
-                dp = new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _server.getPort());
-                _datagramSocketHelper.send(dp);
+                _datagramSocketHelper.send(new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _server.getPort()));
             } catch (IOException e) {
+                println("Error sending packet.");
                 e.printStackTrace();
+                break;
             }
 
             try {
                 println("Waiting for response...");
-                dp = _datagramSocketHelper.pollNextData(30, TimeUnit.SECONDS);
+                optDp = _datagramSocketHelper.pollNextData(30, TimeUnit.SECONDS);
+                if(optDp.isEmpty()) {
+                    println("Must have timed out while waiting for response. Retrying.");
+                    continue;
+                }
+                dp = optDp.get();
                 byte[] data = dp.getData();
                 if(!new String(data, 0, 4).equals("ZIoT")) {
                     println("Not Z-IoT. Trying again...");

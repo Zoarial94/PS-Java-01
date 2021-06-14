@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
@@ -31,33 +32,33 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
     /*
      *  Function will not block. If there is no object, then it will return null
      */
-    public DatagramPacket pollNextData() {
-        return _queue.poll();
+    public Optional<DatagramPacket> pollNextData() {
+        return Optional.ofNullable(_queue.poll());
     }
 
     /*
      *  Function will block until the timeout is reached. It will then return null
      */
-    public DatagramPacket pollNextData(long timeout, TimeUnit timeUnit) throws InterruptedException {
+    public Optional<DatagramPacket> pollNextData(long timeout, TimeUnit timeUnit) throws InterruptedException {
         try {
-            return _queue.poll(timeout, timeUnit);
+            return Optional.ofNullable(_queue.poll(timeout, timeUnit));
         } catch (InterruptedException ex) {
             println("Interrupted, returning null.");
         }
-        return null;
+        return Optional.empty();
     }
 
     /*
      *  Function will block until an object is retrieved.
      *  Function could return null if an exception occurs.
      */
-    public DatagramPacket takeNextData() {
+    public Optional<DatagramPacket> takeNextData() {
         try {
-            return _queue.take();
+            return Optional.of(_queue.take());
         } catch (InterruptedException e) {
             println("Interrupted, returning null.");
         }
-        return null;
+        return Optional.empty();
     }
 
     public void run() {
