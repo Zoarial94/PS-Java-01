@@ -8,6 +8,8 @@ import lombok.Setter;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Objects;
@@ -30,7 +32,11 @@ public class ScriptIoTAction extends IoTAction {
 
     // TODO: Check file digest (sha1, MD5, etc) for integrity
     public static boolean isValidFile(Path path) {
-        return Files.exists(path) && Files.isRegularFile(path) && Files.isReadable(path) && Files.isExecutable(path) && !Files.isSymbolicLink(path);
+        return Files.exists(path) &&
+                Files.isRegularFile(path) &&
+                Files.isReadable(path) &&
+                Files.isExecutable(path) &&
+                !Files.isSymbolicLink(path);
     }
 
     @Override
@@ -39,9 +45,30 @@ public class ScriptIoTAction extends IoTAction {
     }
 
     @Override
-    public String privExecute(IoTActionArgumentList args) {
+    protected String privExecute(IoTActionArgumentList args) {
         // Make sure permission are still valid, then execute.
-        return "Executing " + super.getName() + ".";
+        try {
+            StringBuilder stringBuilder = new StringBuilder();
+            if (isValid()) {
+                Process p = Runtime.getRuntime().exec(path.toFile().getAbsolutePath());
+                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+                String line;
+                while((line = reader.readLine()) != null) {
+                    stringBuilder.append(line);
+                    stringBuilder.append('\n');
+                }
+                if(stringBuilder.length() == 0) {
+                    return "Script returned nothing.";
+                }
+                stringBuilder.deleteCharAt(stringBuilder.length()-1);
+                return stringBuilder.toString();
+            } else {
+                return "Not valid to execute.";
+            }
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            return "Failed to execute " + getName() + ".";
+        }
     }
 
     @Override

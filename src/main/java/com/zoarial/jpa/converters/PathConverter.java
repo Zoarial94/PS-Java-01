@@ -10,7 +10,7 @@ public class PathConverter implements AttributeConverter<Path, String> {
 
     @Override
     public String convertToDatabaseColumn(Path path) {
-        return path.getFileName().toString();
+        return path.toFile().getAbsolutePath();
     }
 
     @Override

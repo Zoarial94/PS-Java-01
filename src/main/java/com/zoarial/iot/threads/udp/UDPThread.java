@@ -36,12 +36,17 @@ public class UDPThread extends PrintBaseClass implements Runnable {
     public void run() {
 
         println("Starting...");
-        if(_server.isHeadCapable()) {
-            println("Starting Head Loop.");
-            headUDPLoop();
-        } else {
-            println("Starting Non-Head Loop.");
-            nonHeadUDPLoop();
+        try {
+            if (_server.isHeadCapable()) {
+                println("Starting Head Loop.");
+                headUDPLoop();
+            } else {
+                println("Starting Non-Head Loop.");
+                nonHeadUDPLoop();
+            }
+        } catch (Exception ex) {
+            println("Unexpectedly closed.");
+            ex.printStackTrace();
         }
         println("Finished.");
 
@@ -71,6 +76,8 @@ public class UDPThread extends PrintBaseClass implements Runnable {
             //String str = ServerServer.buildString(dp.getData()).toString();
             //println("Datagram Packet: " + str);
             replyHeadNodes(dp.get());
+            //TODO: create a queue in ServerServer for things that need to be done
+            //TODO: get info about node just discovered. (This should go into that queue)
         }
     }
 

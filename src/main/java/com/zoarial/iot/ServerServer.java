@@ -195,11 +195,13 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             UUID uuid = UUID.fromString(list.get(0).getString());
             println("UUID: " + uuid);
 
-            ScriptIoTAction action = (ScriptIoTAction) scriptActionsInQuestion.remove(uuid);
-            if(action == null) {
+            boolean actionExists = scriptActionsInQuestion.contains(uuid);
+            if(!actionExists) {
                 return "There is no new action with that UUID.";
             } else {
+                ScriptIoTAction action = (ScriptIoTAction) scriptActionsInQuestion.get(uuid);
                 if(action.isValid()) {
+                    scriptActionsInQuestion.remove(action);
                     listOfActions.add(action);
                     return "Success.";
                 } else {
