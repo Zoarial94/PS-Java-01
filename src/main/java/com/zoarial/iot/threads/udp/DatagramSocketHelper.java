@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
     private final ServerServer _server;
-    private DatagramSocket _ds;
+    private final DatagramSocket _ds;
     private final ArrayBlockingQueue<DatagramPacket> _queue = new ArrayBlockingQueue<>(32);
     private final int BUF_SIZE = 65535;
 
@@ -37,7 +37,8 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
     }
 
     /*
-     *  Function will block until the timeout is reached. It will then return null
+     *  Function will block until the timeout is reached or an object is found.
+     *  If the timeout is reached, null is returned.
      */
     public Optional<DatagramPacket> pollNextData(long timeout, TimeUnit timeUnit) throws InterruptedException {
         try {

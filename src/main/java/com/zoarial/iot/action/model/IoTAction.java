@@ -30,6 +30,8 @@ public abstract class IoTAction implements Serializable {
     @Column(nullable = false)
     protected IoTBasicType returnType = IoTBasicType.STRING;
 
+    protected boolean enabled = true;
+
     // Default, anyone with the right level can use.
     //protected boolean allowByDefault = true;
 
@@ -78,10 +80,12 @@ public abstract class IoTAction implements Serializable {
     }
     //Ensure the argument size is correct
     public final String execute(IoTActionArgumentList args) {
-        if(arguments == args.size()) {
-            return privExecute(args);
+        if(arguments != args.size()) {
+            throw new IllegalArgumentException("(" + name + ") Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
+        } else if(!isEnabled()) {
+            throw new RuntimeException("Action is not enabled.");
         }
-        throw new IllegalArgumentException("(" + name + ") Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
+        return privExecute(args);
     }
 
     // Just call the other execute function

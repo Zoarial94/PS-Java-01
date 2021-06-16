@@ -28,6 +28,15 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
+/*
+ *
+ * I'm not certain how I want this program to be structured.
+ * For now, I will have ServerServer run as its own thread.
+ * The ServerServer thread will start the Head or Non-Head threads and then stop.
+ * In the future, this behavior may change depending on the needs of the program.
+ *
+ */
+
 @Getter
 @Setter
 public class ServerServer extends PrintBaseClass implements Runnable {
@@ -89,11 +98,12 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             e.printStackTrace();
             throw new RuntimeException("Failed to get network interfaces.");
         }
+
         boolean found = false;
         InetAddress tmpInetAddress = null;
-        //TODO: Create someway to to find a usable interface. Maybe
-        //      this should be user specified.
         println("Looking for network device: " + info.networkDeviceName);
+
+        // Look for an ip address from the specified network device.
         while (networkInterfaceEnumeration.hasMoreElements() && !found) {
             NetworkInterface networkInterface = networkInterfaceEnumeration.nextElement();
             println("Found interface: " + networkInterface.getName());
@@ -123,16 +133,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         _serverIP = tmpInetAddress;
     }
 
-    /*
-     *
-     * I'm not certain how I want this program to be structured.
-     * For now, I will have ServerServer run as its own thread.
-     * The ServerServer thread will start the Head or Non-Head threads and then stop.
-     * In the future, this behavior may change depending on the needs of the program.
-     *
-     */
     public void run() {
-        // Try to get the atomic flag. If compareAndSet returns true, then we have the flag and we can start.
+        // Maybe this should be an atomic flag, but for now this should work.
         if (!started) {
             println("Starting...");
             startTime = System.currentTimeMillis();
@@ -147,7 +149,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 createAndStartNewThread(_datagramSocketHelper);
 
             } catch(IOException ex) {
-                System.out.println("Something happened when starting the server. Exiting.");
+                println("Something happened when creating ths socket helpers. Exiting.");
                 System.exit(-1);
             }
 
@@ -158,15 +160,19 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             createAndStartNewThread(new UDPThread(this, _datagramSocketHelper));
             createAndStartNewThread(new TCPAcceptingThread(this, _serverSocketHelper));
         } else {
-            println("Server Already started.");
+            println("Server already started.");
         }
     }
 
+    /*
+     *  This method is a mess and should be refactored/broken up
+     */
     private void generateIoTActions() {
 
         IoTActionDAO ioTActionDAO = new IoTActionDAO();
         IoTNodeDAO ioTNodeDAO = new IoTNodeDAO();
 
+        // Make sure our DB is updated with current information
         IoTNode dbNode = ioTNodeDAO.getNodeByUUID(getUUID());
         if(dbNode == null) {
             ioTNodeDAO.persist(_selfNode);
@@ -192,6 +198,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             println("Being asked to print: \"" + list.get(0).getString() + "\"");
             return "Printed";
         }));
+
+        // Lists actions from scriptActionsInQuestion
         javaIoTActions.add(new JavaIoTAction("GetNewScripts", (byte)4, true, true, (byte)0, (list)->{
             JSONObject root = new JSONObject();
             JSONArray actions = new JSONArray();
@@ -201,6 +209,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             }
             return root.toString();
         }));
+        // Move actions from scriptActionsInQuestion to listOfActions
         javaIoTActions.add(new JavaIoTAction("AddNewScriptToActions", (byte)4, true, true, (byte)1, (list)->{
             UUID uuid = UUID.fromString(list.get(0).getString());
             println("UUID: " + uuid);
