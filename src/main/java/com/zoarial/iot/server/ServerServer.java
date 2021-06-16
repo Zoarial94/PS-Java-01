@@ -37,30 +37,37 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     // an IoTNode representation of its self (the currently running node)
     final private IoTNode _selfNode;
 
-    // Flag used to make sure node is only started once
     final private boolean started = false;
+    // an atomic flag for signaling to all the threads whether the server is closed or not.
     final private AtomicBoolean closed = new AtomicBoolean(false);
 
+    // The ip address of the current device.
+    // Is influenced by the user-configured network device, but is automatically selected from that device.
     final private InetAddress _serverIP;
 
+    // A list of threads this class starts.
+    // Used to forcefully stop threads when the server is closing.
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
+
+    // A list of actions which are ready to be requested by other nodes
     final private IoTActionList listOfActions = new IoTActionList();
+    // A list of actions that need to be reviewed. (Typically for security reasons)
+    // Typically new/changed ScriptIoTActions since they could be edited maliciously/unexpectedly
     final private IoTActionList scriptActionsInQuestion = new IoTActionList();
+
+    // Used for GetUptime action
     private long startTime;
 
-    /*
-     *
-     *  I use socket helpers which only receive packets/sockets so I can separate the logic to use the packets/sockets elsewhere.
-     *  For example, a head node needs to respond to UDP packets, but a non-head may not want to response, or may want to respond differently.
-     *  For sockets, once they are accepted, they can be assigned to a thread which will handle it accordingly.
-     *
-     */
+    // This helper manages the TCP sockets
+    // This is its own thread
     ServerSocketHelper _serverSocketHelper;
 
+    // This helper manages the raw UDP packets for both sending and receiving
+    // This is its own thread
     DatagramSocketHelper _datagramSocketHelper;
 
 
-    public ServerServer(ServerInformation info) throws Exception {
+    public ServerServer(ServerInformation info) {
         super("ServerServer");
 
         println("Initializing...");
@@ -71,52 +78,49 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
         if(!serverInfo.isHeadCapable) {
             // I need to use a different database when running the non-head
+            // This sets the entity manager factory before any DAO object acquire it
             DAOHelper.setEntityManagerFactory("ZIoTNonHead");
         }
 
-        Enumeration<NetworkInterface> n;
+        Enumeration<NetworkInterface> networkInterfaceEnumeration;
         try {
-            n = NetworkInterface.getNetworkInterfaces();
+            networkInterfaceEnumeration = NetworkInterface.getNetworkInterfaces();
         } catch (SocketException e) {
             e.printStackTrace();
-            throw new Exception("Failed to get network interfaces.");
+            throw new RuntimeException("Failed to get network interfaces.");
         }
         boolean found = false;
-        InetAddress tmp = null;
+        InetAddress tmpInetAddress = null;
         //TODO: Create someway to to find a usable interface. Maybe
         //      this should be user specified.
         println("Looking for network device: " + info.networkDeviceName);
-        while (n.hasMoreElements() && !found) {
-            NetworkInterface e = n.nextElement();
-            println("Found interface: " + e.getName());
-            if(!e.getName().equals(info.networkDeviceName)) {
+        while (networkInterfaceEnumeration.hasMoreElements() && !found) {
+            NetworkInterface networkInterface = networkInterfaceEnumeration.nextElement();
+            println("Found interface: " + networkInterface.getName());
+            if(!networkInterface.getName().equals(info.networkDeviceName)) {
                 println("Skipping interface");
                 continue;
             }
-            Enumeration<InetAddress> a = e.getInetAddresses();
-            while (a.hasMoreElements() && !found) {
+            Enumeration<InetAddress> inetAddresses = networkInterface.getInetAddresses();
+            while (inetAddresses.hasMoreElements() && !found) {
 
-                InetAddress addr = a.nextElement();
-                System.out.println(e.getName() + ":  " + addr.getHostAddress());
-                try {
-                    if(!addr.equals(InetAddress.getByAddress(new byte[]{127, 0, 0, 1})) && (addr instanceof Inet4Address)) {
-                        tmp = addr;
-                        found = true;
-                    }
-                } catch (UnknownHostException unknownHostException) {
-                    unknownHostException.printStackTrace();
+                InetAddress address = inetAddresses.nextElement();
+                System.out.println(networkInterface.getName() + ":  " + address.getHostAddress());
+                if(!address.equals(Inet4Address.getLoopbackAddress()) && (address instanceof Inet4Address)) {
+                    tmpInetAddress = address;
+                    found = true;
                 }
             }
         }
 
-        if(tmp == null) {
-            throw new Exception("Unable to find IP address.");
+        if(tmpInetAddress == null) {
+            throw new RuntimeException("Unable to find IP address.");
         }
 
         // Generate the IoTActions list so we can know what we can do
         generateIoTActions();
 
-        _serverIP = tmp;
+        _serverIP = tmpInetAddress;
     }
 
     /*
