@@ -13,6 +13,7 @@ import javax.persistence.criteria.CriteriaQuery;
 import javax.persistence.criteria.ParameterExpression;
 import javax.persistence.criteria.Root;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public class IoTActionDAO extends PrintBaseClass {
@@ -27,7 +28,37 @@ public class IoTActionDAO extends PrintBaseClass {
         EntityManager em = emf.createEntityManager();
         var action = em.find(IoTAction.class, uuid);
         em.close();
+        if(action == null) {
+            throw new EntityNotFoundException();
+        }
         return action;
+    }
+
+    public Optional<IoTAction> findActionByUUID(UUID uuid) {
+        EntityManager em = emf.createEntityManager();
+        var action = em.find(IoTAction.class, uuid);
+        em.close();
+        return Optional.ofNullable(action);
+    }
+
+    public IoTActionList getEnabledActions() {
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<IoTAction> q = em.createNamedQuery("IoTAction.getEnabled", IoTAction.class);
+
+        IoTActionList actions = new IoTActionList(q.getResultList());
+        em.close();
+
+        return actions;
+    }
+
+    public IoTActionList getDisabledActions() {
+        EntityManager em = emf.createEntityManager();
+        TypedQuery<IoTAction> q = em.createNamedQuery("IoTAction.getDisabled", IoTAction.class);
+
+        IoTActionList actions = new IoTActionList(q.getResultList());
+        em.close();
+
+        return actions;
     }
 
     /**

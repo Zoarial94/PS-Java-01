@@ -36,7 +36,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
 
         println("Starting...");
         try {
-            if (_server.isHeadCapable()) {
+            if (_server.getServerInfo().isHeadCapable) {
                 println("Starting Head Loop.");
                 headUDPLoop();
             } else {
@@ -87,9 +87,9 @@ public class UDPThread extends PrintBaseClass implements Runnable {
 
             IoTPacketSectionList sectionList = new IoTPacketSectionList();
             sectionList.add("ZIoT");
-            sectionList.add(_server.getNodeType());
-            sectionList.add(_server.getHostname());
-            sectionList.add(_server.getUUID());
+            sectionList.add(_server.getServerInfo().nodeType);
+            sectionList.add(_server.getServerInfo().hostname);
+            sectionList.add(_server.getServerInfo().uuid);
 
             byte[] buf = sectionList.getNetworkResponse();
 
@@ -98,7 +98,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
             Optional<DatagramPacket> optDp;
             DatagramPacket dp;
             try {
-                _datagramSocketHelper.send(new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _server.getPort()));
+                _datagramSocketHelper.send(new DatagramPacket(buf, buf.length, InetAddress.getByAddress(addr), _server.getServerInfo().serverPort));
             } catch (IOException e) {
                 println("Error sending packet.");
                 e.printStackTrace();
@@ -130,16 +130,16 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                     println("Address: " + headAddr);
                     if(!Arrays.equals(headAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
                         println("Found address: " + headAddr);
-                        int size = _server.getInfo().headNodes.size();
+                        int size = _server.getServerInfo().headNodes.size();
                         for(int i = 0; i < size; i++) {
-                            InetAddress servAddr = _server.getInfo().headNodes.get(i);
+                            InetAddress servAddr = _server.getServerInfo().headNodes.get(i);
                             println("Comparing: " + servAddr);
                             if(Arrays.equals(servAddr.getAddress(), headAddr.getAddress())) {
                                 // We already have this address in the list.
                                 break;
                             } else if(Arrays.equals(servAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
                                 println("Replacing server address...");
-                                _server.getInfo().headNodes.set(i, headAddr);
+                                _server.getServerInfo().headNodes.set(i, headAddr);
                                 break;
                             }
                         }
@@ -181,9 +181,9 @@ public class UDPThread extends PrintBaseClass implements Runnable {
             byte[] response = new byte[16];
             System.arraycopy("ZIoT".getBytes(), 0, response, 0, 4);
 
-            System.arraycopy(_server.getIP().getAddress(), 0, response, 4, 4);
+            System.arraycopy(_server.getServerIP().getAddress(), 0, response, 4, 4);
 
-            DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _server.getPort());
+            DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _server.getServerInfo().serverPort);
 
 
             _datagramSocketHelper.send(dpResponse);

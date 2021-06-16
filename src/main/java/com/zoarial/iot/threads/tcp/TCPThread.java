@@ -99,7 +99,6 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                     println("Request: " + str);
                     switch (str) {
                         case "action" -> {
-                            var actionsList = _server.getListOfActions();
 
                             UUID uuid = _inSocket.readUUID();
                             String rawJson = _inSocket.readJson();
@@ -112,8 +111,9 @@ public class TCPThread extends PrintBaseClass implements Runnable {
 
                             JSONArray args = jsonObject.getJSONArray("args");
                             // Check for the action
-                            IoTAction action = actionsList.get(uuid);
-                            if(action != null) {
+                            var optAction = ioTActionDAO.findActionByUUID(uuid);
+                            if(optAction.isPresent()) {
+                                var action = optAction.get();
                                 // Check access
                                 if(action.isLocal() && !_inSocket.isLocal()) {
                                     respondToSession(session, "You don't have access to this ");
@@ -134,6 +134,25 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                             } else {
                                 respondToSession(session, "No action with UUID: " + uuid);
                             }
+                        }
+                        case "updateAction" -> {
+                            UUID uuid = _inSocket.readUUID();
+                            str = _inSocket.readString();
+                            println("Updating action property " + str + " of " + uuid + ".");
+                            var optAction = ioTActionDAO.findActionByUUID(uuid);
+                            if(optAction.isEmpty()) {
+                                respondToSession(session, "No action with UUID: " + uuid);
+                                break;
+                            }
+                            var action = optAction.get();
+                            switch(str) {
+                                case "securityLevel" -> action.setSecurityLevel(_inSocket.readByte());
+                                case "encrypt" -> action.setEncrypted(_inSocket.readBoolean());
+                                case "local" -> action.setLocal(_inSocket.readBoolean());
+                                case "desc" -> action.setDescription(_inSocket.readString());
+                                default -> respondToSession(session, "No action attribute: " + str);
+                            }
+                            respondToSession(session, "Success.");
                         }
                         case "info" -> {
                             str = _inSocket.readString();
@@ -158,10 +177,10 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 case "actions" -> respondActionList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 case "general" -> {
                                     IoTPacketSectionList sectionList = new IoTPacketSectionList();
-                                    sectionList.add(_server.getHostname());
-                                    sectionList.add(_server.getUUID());
-                                    sectionList.add(_server.isHeadCapable());
-                                    sectionList.add(_server.isVolatile());
+                                    sectionList.add(_server.getServerInfo().hostname);
+                                    sectionList.add(_server.getServerInfo().uuid);
+                                    sectionList.add(_server.getServerInfo().isHeadCapable);
+                                    sectionList.add(_server.getServerInfo().isVolatile);
                                     respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), sectionList);
                                 }
                                 case "nodes" -> {
@@ -218,7 +237,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     }
 
     private void respondActionList(IoTSession session) {
-        var actionList = _server.getListOfActions();
+        var actionList = ioTActionDAO.getEnabledActions();
         IoTPacketSectionList sectionList = new IoTPacketSectionList(actionList.size() * 4 + 3);
 
         sectionList.add("ZIoT");

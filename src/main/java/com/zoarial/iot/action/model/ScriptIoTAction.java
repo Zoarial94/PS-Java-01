@@ -29,7 +29,7 @@ public class ScriptIoTAction extends IoTAction {
         super(name, uuid, level, encrypted, local, args);
         path = file;
         // For security reasons, have script actions disabled by default
-        setEnabled(false);
+        super.disable();
     }
 
     // TODO: Check file digest (sha1, MD5, etc) for integrity

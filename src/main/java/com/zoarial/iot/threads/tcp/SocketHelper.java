@@ -92,6 +92,10 @@ public class SocketHelper extends PrintBaseClass {
         return in.readByte();
     }
 
+    public boolean readBoolean() throws IOException {
+        return in.readBoolean();
+    }
+
     public String readJson() throws IOException {
         StringBuilder json = new StringBuilder();
 

@@ -12,6 +12,11 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
+//TODO: transition to named queries for IoTActionDAO
+@NamedQueries({
+        @NamedQuery(name = "IoTAction.getEnabled", query = "SELECT a FROM IoTAction a WHERE a.enabled = true"),
+        @NamedQuery(name = "IoTAction.getDisabled", query = "SELECT a FROM IoTAction a WHERE a.enabled = false")
+})
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
 
@@ -30,6 +35,8 @@ public abstract class IoTAction implements Serializable {
     @Column(nullable = false)
     protected IoTBasicType returnType = IoTBasicType.STRING;
 
+    // Prevent getter and setter
+    @Setter(AccessLevel.NONE)
     protected boolean enabled = true;
 
     // Default, anyone with the right level can use.
@@ -72,7 +79,18 @@ public abstract class IoTAction implements Serializable {
     // Is the required script still present? etc.
     public abstract boolean isValid();
 
-    // This will be called and executed in its own thread
+    public void enable() {
+        if(isValid()) {
+            enabled = true;
+        } else {
+            enabled = false;
+            throw new RuntimeException("Unable to enable action. Action is not valid.");
+        }
+    }
+    public void disable() {
+        enabled = false;
+    }
+
     protected abstract String privExecute(IoTActionArgumentList args);
 
     public final String execute() {
@@ -84,6 +102,8 @@ public abstract class IoTAction implements Serializable {
             throw new IllegalArgumentException("(" + name + ") Incorrect amount of arguments. Needed: " + arguments + " Got: " + args.size());
         } else if(!isEnabled()) {
             throw new RuntimeException("Action is not enabled.");
+        } else if(!isValid()) {
+            throw new RuntimeException("Action is not valid.");
         }
         return privExecute(args);
     }
@@ -113,6 +133,7 @@ public abstract class IoTAction implements Serializable {
         jsonAction.put("arguments", arguments);
         jsonAction.put("encrypted", encrypted);
         jsonAction.put("local", local);
+        jsonAction.put("enabled", enabled);
         return jsonAction;
     }
 
@@ -135,11 +156,11 @@ public abstract class IoTAction implements Serializable {
         if (this == o) return true;
         if (!(o instanceof IoTAction)) return false;
         IoTAction ioTAction = (IoTAction) o;
-        return securityLevel == ioTAction.securityLevel && arguments == ioTAction.arguments && encrypted == ioTAction.encrypted && local == ioTAction.local && uuid.equals(ioTAction.uuid) && name.equals(ioTAction.name) && Objects.equals(description, ioTAction.description) && returnType == ioTAction.returnType && node.equals(ioTAction.node);
+        return enabled == ioTAction.enabled && securityLevel == ioTAction.securityLevel && arguments == ioTAction.arguments && encrypted == ioTAction.encrypted && local == ioTAction.local && uuid.equals(ioTAction.uuid) && name.equals(ioTAction.name) && Objects.equals(description, ioTAction.description) && returnType == ioTAction.returnType;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uuid, name, description, returnType, securityLevel, arguments, encrypted, local, node);
+        return Objects.hash(uuid, name, description, returnType, enabled, securityLevel, arguments, encrypted, local);
     }
 }

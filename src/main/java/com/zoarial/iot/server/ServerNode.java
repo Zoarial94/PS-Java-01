@@ -142,7 +142,7 @@ public class ServerNode extends PrintBaseClass {
         _close = true;
         _server.close();
         //TODO: check ServerServer for changes and then save those changes to the .config file
-        ServerInformation serverInfo = _server.getInfo();
+        ServerInformation serverInfo = _server.getServerInfo();
         if(!serverInfo.equals(oldInfo)) {
             println("Updating config file.");
             prop.setProperty(DEVICE + "uuid", serverInfo.uuid.toString());

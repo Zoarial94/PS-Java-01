@@ -1,11 +1,11 @@
 package com.zoarial.iot.action.model;
 
+import com.zoarial.iot.action.javaAction.JavaIoTActionExecHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Transient;
 import java.util.UUID;
@@ -17,31 +17,36 @@ import java.util.function.Function;
 @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class JavaIoTAction extends IoTAction {
-    @Transient @Column(nullable = false)
-    Function<IoTActionArgumentList, String> exec;
+    @Transient
+    @Getter(AccessLevel.NONE)
+    private Function<IoTActionArgumentList, String> exec;
 
-    public JavaIoTAction(String name, byte level, boolean encrypted, boolean local, byte args, Function<IoTActionArgumentList, String> exec) {
-        super.setName(name);
-        super.setSecurityLevel(level);
-        super.setArguments(arguments);
-        super.setEncrypted(encrypted);
-        super.setLocal(local);
-        super.setArguments(args);
-        this.exec = exec;
+    public JavaIoTAction(String name, byte args, byte securityLevel, boolean encrypt, boolean local) {
+        setName(name);
+        setArguments(args);
+        setSecurityLevel(securityLevel);
+        setEncrypted(encrypt);
+        setLocal(local);
     }
 
-    public JavaIoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte args, Function<IoTActionArgumentList, String> exec) {
-        super(name, uuid, level, encrypted, local, args);
-        this.exec = exec;
+    // This tries to cache the function into the current object (if the function exists)
+    private Function<IoTActionArgumentList, String> getExec() {
+        if(exec != null) {
+            return exec;
+        }
+        exec = JavaIoTActionExecHelper.getFunction(getName());
+        return exec;
     }
 
     @Override
     public boolean isValid() {
-        return exec != null;
+        return getExec() != null;
     }
 
     @Override
-    public String privExecute(IoTActionArgumentList args) {
+     protected String privExecute(IoTActionArgumentList args) {
+        // This function only can run if isValid is true.
+        // This means this function will only run if exec is not null.
         return exec.apply(args);
     }
 }
