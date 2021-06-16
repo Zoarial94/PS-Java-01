@@ -1,6 +1,8 @@
-package com.zoarial.iot;
+package com.zoarial.iot.server;
 
 import com.zoarial.PrintBaseClass;
+import com.zoarial.iot.model.ServerInformation;
+import com.zoarial.iot.server.ServerServer;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -10,7 +12,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.UUID;
 
-import static com.zoarial.iot.ServerPublic.*;
+import static com.zoarial.iot.model.ServerPublic.*;
 
 
 public class ServerNode extends PrintBaseClass {

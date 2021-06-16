@@ -1,7 +1,8 @@
-package com.zoarial.iot.dao;
+package com.zoarial.iot.node.dao;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.models.IoTNode;
+import com.zoarial.iot.dao.DAOHelper;
+import com.zoarial.iot.node.model.IoTNode;
 
 import javax.persistence.*;
 import java.util.List;

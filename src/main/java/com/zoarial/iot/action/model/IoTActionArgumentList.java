@@ -1,4 +1,4 @@
-package com.zoarial.iot.models.actions;
+package com.zoarial.iot.action.model;
 
 import java.util.ArrayList;
 

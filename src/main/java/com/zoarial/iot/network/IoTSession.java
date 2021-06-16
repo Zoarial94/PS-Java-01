@@ -1,4 +1,4 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.network;
 
 import javax.print.attribute.standard.MediaSize;
 

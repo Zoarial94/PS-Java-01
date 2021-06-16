@@ -8,8 +8,8 @@
         <!-- Persistence provider -->
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <!-- Entity classes -->
-        <class>com.zoarial.iot.models.IoTNode</class>
-        <class>com.zoarial.iot.models.actions.IoTAction</class>
+        <class>com.zoarial.iot.node.model.IoTNode</class>
+        <class>com.zoarial.iot.action.model.IoTAction</class>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver" />
             <property name="javax.persistence.jdbc.url"    value="jdbc:mariadb://10.94.100.30/ZIoT" />
@@ -33,8 +33,8 @@
         <!-- Persistence provider -->
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         <!-- Entity classes -->
-        <class>com.zoarial.iot.models.IoTNode</class>
-        <class>com.zoarial.iot.models.actions.IoTAction</class>
+        <class>com.zoarial.iot.node.model.IoTNode</class>
+        <class>com.zoarial.iot.action.model.IoTAction</class>
         <properties>
             <property name="javax.persistence.jdbc.driver" value="org.mariadb.jdbc.Driver" />
             <property name="javax.persistence.jdbc.url"    value="jdbc:mariadb://localhost/ZIoTNonHead" />

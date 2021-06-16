@@ -1,13 +1,13 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.*;
-import com.zoarial.iot.dao.IoTActionDAO;
-import com.zoarial.iot.dao.IoTNodeDAO;
-import com.zoarial.iot.models.IoTNode;
-import com.zoarial.iot.models.actions.IoTAction;
-import com.zoarial.iot.ServerServer;
-import com.zoarial.iot.models.IoTPacketSectionList;
-import com.zoarial.iot.models.IoTSession;
+import com.zoarial.iot.action.dao.IoTActionDAO;
+import com.zoarial.iot.node.dao.IoTNodeDAO;
+import com.zoarial.iot.node.model.IoTNode;
+import com.zoarial.iot.action.model.IoTAction;
+import com.zoarial.iot.server.ServerServer;
+import com.zoarial.iot.network.IoTPacketSectionList;
+import com.zoarial.iot.network.IoTSession;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;

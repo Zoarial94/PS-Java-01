@@ -1,12 +1,15 @@
-package com.zoarial.iot;
+package com.zoarial.iot.server;
 
 import com.zoarial.*;
+import com.zoarial.iot.action.model.IoTAction;
+import com.zoarial.iot.action.model.IoTActionList;
+import com.zoarial.iot.action.model.JavaIoTAction;
+import com.zoarial.iot.action.model.ScriptIoTAction;
 import com.zoarial.iot.dao.DAOHelper;
-import com.zoarial.iot.dao.IoTActionDAO;
-import com.zoarial.iot.dao.IoTNodeDAO;
-import com.zoarial.iot.models.IoTNode;
-import com.zoarial.iot.models.IoTPacketSectionList;
-import com.zoarial.iot.models.actions.*;
+import com.zoarial.iot.action.dao.IoTActionDAO;
+import com.zoarial.iot.model.ServerInformation;
+import com.zoarial.iot.node.dao.IoTNodeDAO;
+import com.zoarial.iot.node.model.IoTNode;
 import com.zoarial.iot.threads.tcp.TCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
 import com.zoarial.iot.threads.udp.DatagramSocketHelper;

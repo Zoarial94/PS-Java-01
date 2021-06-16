@@ -1,4 +1,6 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.network;
+
+import com.zoarial.iot.model.IoTBasicType;
 
 import java.nio.ByteBuffer;
 import java.util.UUID;

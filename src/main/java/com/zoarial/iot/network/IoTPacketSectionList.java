@@ -1,7 +1,6 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.network;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 public class IoTPacketSectionList extends ArrayList<IoTPacketSection> {

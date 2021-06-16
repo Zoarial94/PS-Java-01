@@ -1,10 +1,10 @@
 package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.ServerServer;
-import com.zoarial.iot.dao.IoTNodeDAO;
-import com.zoarial.iot.models.IoTNode;
-import com.zoarial.iot.models.IoTPacketSectionList;
+import com.zoarial.iot.server.ServerServer;
+import com.zoarial.iot.node.dao.IoTNodeDAO;
+import com.zoarial.iot.node.model.IoTNode;
+import com.zoarial.iot.network.IoTPacketSectionList;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -14,7 +14,6 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /*
  * This thread shouldn't have to be multithreaded, but could be.

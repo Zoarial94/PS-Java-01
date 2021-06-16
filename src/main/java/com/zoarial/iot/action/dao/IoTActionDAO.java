@@ -1,10 +1,11 @@
-package com.zoarial.iot.dao;
+package com.zoarial.iot.action.dao;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.models.actions.IoTAction;
-import com.zoarial.iot.models.actions.IoTActionList;
-import com.zoarial.iot.models.actions.JavaIoTAction;
-import com.zoarial.iot.models.actions.ScriptIoTAction;
+import com.zoarial.iot.action.model.IoTAction;
+import com.zoarial.iot.dao.DAOHelper;
+import com.zoarial.iot.action.model.IoTActionList;
+import com.zoarial.iot.action.model.JavaIoTAction;
+import com.zoarial.iot.action.model.ScriptIoTAction;
 
 import javax.persistence.*;
 import javax.persistence.criteria.CriteriaBuilder;

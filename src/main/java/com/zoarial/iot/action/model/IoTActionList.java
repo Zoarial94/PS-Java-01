@@ -1,4 +1,6 @@
-package com.zoarial.iot.models.actions;
+package com.zoarial.iot.action.model;
+
+import com.zoarial.iot.action.model.IoTAction;
 
 import java.util.*;
 

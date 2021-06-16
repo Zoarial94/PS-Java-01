@@ -1,4 +1,4 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.model;
 
 public enum IoTBasicType {
     STRING,

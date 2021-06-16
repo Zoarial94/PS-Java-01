@@ -1,7 +1,7 @@
 package com.zoarial.iot.threads.udp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.ServerServer;
+import com.zoarial.iot.server.ServerServer;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

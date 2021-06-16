@@ -1,4 +1,4 @@
-package com.zoarial.iot;
+package com.zoarial.iot.model;
 
 import java.net.InetAddress;
 import java.util.ArrayList;

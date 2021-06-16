@@ -1,6 +1,6 @@
-package com.zoarial.iot.models;
+package com.zoarial.iot.node.model;
 
-import com.zoarial.iot.models.actions.IoTAction;
+import com.zoarial.iot.action.model.IoTAction;
 import lombok.Getter;
 import lombok.Setter;
 

@@ -1,4 +1,4 @@
-package com.zoarial.iot;
+package com.zoarial.iot.model;
 
 public class ServerPublic {
     static public final int RECV_NODE  =	0;

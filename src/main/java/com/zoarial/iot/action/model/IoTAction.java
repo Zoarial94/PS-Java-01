@@ -1,7 +1,7 @@
-package com.zoarial.iot.models.actions;
+package com.zoarial.iot.action.model;
 
-import com.zoarial.iot.models.IoTBasicType;
-import com.zoarial.iot.models.IoTNode;
+import com.zoarial.iot.model.IoTBasicType;
+import com.zoarial.iot.node.model.IoTNode;
 import lombok.*;
 import lombok.experimental.FieldDefaults;
 import org.json.JSONArray;

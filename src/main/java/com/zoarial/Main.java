@@ -1,6 +1,6 @@
 package com.zoarial;
 
-import com.zoarial.iot.ServerNode;
+import com.zoarial.iot.server.ServerNode;
 
 public class Main {
     static ServerNode _server;

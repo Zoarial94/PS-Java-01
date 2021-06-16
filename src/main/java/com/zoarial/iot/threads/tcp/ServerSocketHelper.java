@@ -1,7 +1,7 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import com.zoarial.iot.ServerServer;
+import com.zoarial.iot.server.ServerServer;
 
 import java.io.IOException;
 import java.net.ServerSocket;
