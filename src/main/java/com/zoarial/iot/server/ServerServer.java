@@ -32,11 +32,14 @@ import java.util.stream.Stream;
 @Setter
 public class ServerServer extends PrintBaseClass implements Runnable {
 
+    // Easier to pass all the server info around if its all in one object
     final private ServerInformation serverInfo;
+    // an IoTNode representation of its self (the currently running node)
     final private IoTNode _selfNode;
 
-    final private AtomicBoolean _started = new AtomicBoolean(false);
-    final private AtomicBoolean _close = new AtomicBoolean(false);
+    // Flag used to make sure node is only started once
+    final private boolean started = false;
+    final private AtomicBoolean closed = new AtomicBoolean(false);
 
     final private InetAddress _serverIP;
 
@@ -126,7 +129,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
      */
     public void run() {
         // Try to get the atomic flag. If compareAndSet returns true, then we have the flag and we can start.
-        if (_started.compareAndSet(false, true)) {
+        if (!started) {
             println("Starting...");
             startTime = System.currentTimeMillis();
 
@@ -386,7 +389,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
     public void close(boolean join) {
         // Mark the server as closed
-        _close.setOpaque(true);
+        closed.setOpaque(true);
 
         // Close original sockets
         if(_datagramSocketHelper != null && !_datagramSocketHelper.isClosed()) {
@@ -420,7 +423,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public boolean isClosed() {
-        return _close.getOpaque();
+        return closed.getOpaque();
     }
 
     public boolean isVolatile() {
