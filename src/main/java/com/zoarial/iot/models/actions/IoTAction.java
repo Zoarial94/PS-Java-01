@@ -53,7 +53,7 @@ public abstract class IoTAction implements Serializable {
     protected boolean encrypted;
     protected boolean local;
 
-    // If null, then the action belongs to the local node
+
     @ManyToOne(optional = false)
     protected IoTNode node;
 

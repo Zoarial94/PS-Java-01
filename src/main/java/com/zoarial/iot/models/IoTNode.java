@@ -27,8 +27,9 @@ public class IoTNode {
     @Column(nullable = false)
     private long lastHeardFrom;
 
-    @OneToMany
-    List<IoTAction> actions;
+    // Map to the class member 'node' in IoTAction
+    @OneToMany(mappedBy = "node")
+    private List<IoTAction> actions;
 
     public IoTNode() {
 

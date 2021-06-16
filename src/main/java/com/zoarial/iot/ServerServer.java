@@ -289,7 +289,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         // TODO: find actions in the db which are stale
         try {
             listOfScripts = Files.list(scriptDir);
-            println("Found files: ");
             listOfScripts.filter(file -> {
                 boolean b = ScriptIoTAction.isValidFile(file);
                 if(!b) {
@@ -308,7 +307,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                     scriptActionsInQuestion.add(action);
                     ioTActionDAO.persist(action);
                 } else {
-                    if(dbAction.isValid()) {
+                    if(dbAction.isValid() && dbAction.isEnabled()) {
                         listOfActions.add(dbAction);
                     } else {
                         println("Script action is no longer valid:\n" + dbAction);

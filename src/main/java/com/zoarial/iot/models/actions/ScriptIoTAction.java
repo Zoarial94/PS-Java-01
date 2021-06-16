@@ -24,6 +24,7 @@ public class ScriptIoTAction extends IoTAction {
     @Column(nullable = false)
     @Convert(converter = com.zoarial.jpa.converters.PathConverter.class)
     Path path;
+    boolean enabled = false;
 
     public ScriptIoTAction(String name, UUID uuid, byte level, boolean encrypted, boolean local, byte args, Path file) {
         super(name, uuid, level, encrypted, local, args);
@@ -47,24 +48,25 @@ public class ScriptIoTAction extends IoTAction {
     @Override
     protected String privExecute(IoTActionArgumentList args) {
         // Make sure permission are still valid, then execute.
+        if (!isValid()) {
+            return "Unable to run script. Invalid.";
+        } else if (!isEnabled()) {
+            return "Unable to run script. Disabled.";
+        }
         try {
             StringBuilder stringBuilder = new StringBuilder();
-            if (isValid()) {
-                Process p = Runtime.getRuntime().exec(path.toFile().getAbsolutePath());
-                BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
-                String line;
-                while((line = reader.readLine()) != null) {
-                    stringBuilder.append(line);
-                    stringBuilder.append('\n');
-                }
-                if(stringBuilder.length() == 0) {
-                    return "Script returned nothing.";
-                }
-                stringBuilder.deleteCharAt(stringBuilder.length()-1);
-                return stringBuilder.toString();
-            } else {
-                return "Not valid to execute.";
+            Process p = Runtime.getRuntime().exec(path.toFile().getAbsolutePath());
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            String line;
+            while ((line = reader.readLine()) != null) {
+                stringBuilder.append(line);
+                stringBuilder.append('\n');
             }
+            if (stringBuilder.length() == 0) {
+                return "Script returned nothing.";
+            }
+            stringBuilder.deleteCharAt(stringBuilder.length() - 1);
+            return stringBuilder.toString();
         } catch (Exception ex) {
             ex.printStackTrace();
             return "Failed to execute " + getName() + ".";
