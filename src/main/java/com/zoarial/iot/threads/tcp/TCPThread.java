@@ -26,21 +26,15 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     private static final List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
     private final byte _version = (byte)0;
     HashMap<Integer, IoTSession> sessions = new HashMap<>();
-    private static final char NULL_BYTE = 0;
 
-    private SocketHelper _inSocket;
-    private IoTNodeDAO ioTNodeDAO;
-    private IoTActionDAO ioTActionDAO;
+    private final SocketHelper _inSocket;
+    private final IoTNodeDAO ioTNodeDAO = new IoTNodeDAO();
+    private final IoTActionDAO ioTActionDAO = new IoTActionDAO();
 
     public TCPThread(ServerServer server, SocketHelper inSocket) {
-
         super("HeadTCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
         _server = server;
-
-        ioTActionDAO = new IoTActionDAO();
-        ioTNodeDAO = new IoTNodeDAO();
-
     }
 
     public void run() {

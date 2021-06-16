@@ -29,10 +29,14 @@ public class TCPAcceptingThread extends PrintBaseClass implements Runnable {
             // Start
             loop();
 
+            println("Shutting down...");
+
             // Since the server is closing, interrupt all created threads (That are still running)
             for(Thread t : TCPThread.getThreads()) {
                 t.interrupt();
             }
+
+            println("Finished shutting down.");
         } else {
             println("A thread has already started. Not starting.");
         }

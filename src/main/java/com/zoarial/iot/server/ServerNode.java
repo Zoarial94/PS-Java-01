@@ -2,7 +2,6 @@ package com.zoarial.iot.server;
 
 import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.model.ServerInformation;
-import com.zoarial.iot.server.ServerServer;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -124,9 +123,11 @@ public class ServerNode extends PrintBaseClass {
     }
 
     public boolean start() {
-        if(!_isInitialized) {
+        if (!_isInitialized) {
             println("Node is not initialized yet. Cannot start.");
             return false;
+        } else if (_server.isStarted()) {
+            println("Unable to start server: server has already started.");
         } else {
             println("Staring Server...");
         }
