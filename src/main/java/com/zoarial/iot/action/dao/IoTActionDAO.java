@@ -116,6 +116,18 @@ public class IoTActionDAO extends PrintBaseClass {
 
     }
 
+    public boolean contains(IoTAction node) {
+        return findActionByUUID(node.getUuid()).isPresent();
+    }
+
+    public void persistOrUpdate(IoTAction action) {
+        if(contains(action)) {
+            update(action);
+        } else {
+            persist(action);
+        }
+    }
+
     public IoTActionList getAllActions() {
         EntityManager em = emf.createEntityManager();
         EntityTransaction transaction = em.getTransaction();

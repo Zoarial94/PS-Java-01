@@ -58,9 +58,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
         Optional<DatagramPacket> dp;
         while (!_server.isClosed()) {
             /*
-             *
              * UDP Handler Loop
-             *
              */
             try {
                 dp = _datagramSocketHelper.pollNextData(10, TimeUnit.SECONDS);
@@ -125,15 +123,12 @@ public class UDPThread extends PrintBaseClass implements Runnable {
                         InetAddress.getByAddress(Arrays.copyOfRange(data, 8, 12)),
                         InetAddress.getByAddress(Arrays.copyOfRange(data, 12, 16))};
 
-                println("Checking for new addresses...");
                 for(InetAddress headAddr : headAddrs) {
                     println("Address: " + headAddr);
                     if(!Arrays.equals(headAddr.getAddress(), new byte[] {0, 0, 0, 0})) {
-                        println("Found address: " + headAddr);
                         int size = _server.getServerInfo().headNodes.size();
                         for(int i = 0; i < size; i++) {
                             InetAddress servAddr = _server.getServerInfo().headNodes.get(i);
-                            println("Comparing: " + servAddr);
                             if(Arrays.equals(servAddr.getAddress(), headAddr.getAddress())) {
                                 // We already have this address in the list.
                                 break;
@@ -189,12 +184,15 @@ public class UDPThread extends PrintBaseClass implements Runnable {
             _datagramSocketHelper.send(dpResponse);
 
             IoTNode newNode = new IoTNode(hostname, uuid, nodeType);
+            newNode.setLastIp(dp.getAddress().getAddress());
+            newNode.setLastHeardFrom(System.currentTimeMillis());
             if(!ioTNodeDAO.containsNode(newNode)) {
-                newNode.setLastHeardFrom(System.currentTimeMillis());
                 ioTNodeDAO.persist(newNode);
             } else {
-                ioTNodeDAO.updateTimestamp(uuid, System.currentTimeMillis());
+                ioTNodeDAO.update(newNode);
             }
+
+            _server.getAndUpdateInfoAboutNode(newNode);
 
         } catch (IOException e) {
             e.printStackTrace();

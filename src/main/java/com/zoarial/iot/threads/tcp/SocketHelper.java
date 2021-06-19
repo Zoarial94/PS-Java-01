@@ -115,6 +115,10 @@ public class SocketHelper extends PrintBaseClass {
             json.append((char)b);
         }
 
+        // Read the 0 appended to the end
+        if(in.readByte() != 0) {
+            throw new RuntimeException("Expected null byte termination");
+        }
         return json.toString();
     }
 

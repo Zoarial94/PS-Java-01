@@ -19,6 +19,7 @@ import java.util.UUID;
 })
 @Entity
 @Inheritance(strategy = InheritanceType.JOINED)
+@Table(uniqueConstraints = {@UniqueConstraint(columnNames = {"uuid", "node_uuid"})})
 
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @FieldDefaults(level = AccessLevel.PROTECTED)
@@ -28,7 +29,7 @@ public abstract class IoTAction implements Serializable {
     // UUID is 16 bytes (128 bits)
     @Id @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
     protected UUID uuid;
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     protected String name;
     protected String description;
 

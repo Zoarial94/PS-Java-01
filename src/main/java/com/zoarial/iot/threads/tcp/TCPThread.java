@@ -114,6 +114,9 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                             var optAction = ioTActionDAO.findActionByUUID(uuid);
                             if(optAction.isPresent()) {
                                 var action = optAction.get();
+                                if(!action.getNode().equals(_server.getSelfNode())) {
+                                    respondToSession(session, "I can't run other node's actions yet.");
+                                }
                                 // Check access
                                 if(action.isLocal() && !_inSocket.isLocal()) {
                                     respondToSession(session, "You don't have access to this ");
@@ -152,6 +155,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 case "desc" -> action.setDescription(_inSocket.readString());
                                 default -> respondToSession(session, "No action attribute: " + str);
                             }
+                            ioTActionDAO.update(action);
                             respondToSession(session, "Success.");
                         }
                         case "info" -> {

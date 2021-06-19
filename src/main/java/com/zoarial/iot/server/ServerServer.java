@@ -6,14 +6,17 @@ import com.zoarial.iot.action.model.*;
 import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.action.dao.IoTActionDAO;
 import com.zoarial.iot.model.ServerInformation;
+import com.zoarial.iot.network.IoTPacketSectionList;
 import com.zoarial.iot.node.dao.IoTNodeDAO;
 import com.zoarial.iot.node.model.IoTNode;
+import com.zoarial.iot.threads.tcp.SocketHelper;
 import com.zoarial.iot.threads.tcp.TCPAcceptingThread;
 import com.zoarial.iot.threads.tcp.ServerSocketHelper;
 import com.zoarial.iot.threads.udp.DatagramSocketHelper;
 import com.zoarial.iot.threads.udp.UDPThread;
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -37,6 +40,7 @@ import java.util.stream.Stream;
  */
 
 @Getter
+@Slf4j
 public class ServerServer extends PrintBaseClass implements Runnable {
 
     // Easier to pass all the server info around if its all in one object
@@ -57,14 +61,16 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     // Used to forcefully stop threads when the server is closing.
     @Getter(AccessLevel.NONE)
     final private List<Thread> threads = Collections.synchronizedList(new ArrayList<>(8));
+    @Getter(AccessLevel.NONE)
+    private final HashMap<UUID, Socket> externalNodeConnections = new HashMap<>();
     // This helper manages the TCP sockets
     // This is its own thread
     @Getter(AccessLevel.NONE)
-    ServerSocketHelper serverSocketHelper;
+    private ServerSocketHelper serverSocketHelper;
     // This helper manages the raw UDP packets for both sending and receiving
     // This is its own thread
     @Getter(AccessLevel.NONE)
-    DatagramSocketHelper datagramSocketHelper;
+    private DatagramSocketHelper datagramSocketHelper;
     // Used for GetUptime action
     private long startTime;
 
@@ -371,6 +377,99 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     }
 
+    public void getAndUpdateInfoAboutNode(IoTNode node) {
+        Socket socket = externalNodeConnections.get(node.getUuid());
+        if (socket == null || socket.isClosed()) {
+            log.trace("Socket to node " + node.getHostname() + " does not exist. Creating one...");
+            try {
+                printArray(node.getLastIp());
+                socket = new Socket(InetAddress.getByAddress(node.getLastIp()), getServerInfo().serverPort);
+                externalNodeConnections.put(node.getUuid(), socket);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+                log.error("Unable to get InetAddress from bytes.");
+                return;
+            } catch (IOException e) {
+                e.printStackTrace();
+                log.error("Unable to connect to node");
+                return;
+            }
+            log.trace("Created socket for " + node.getHostname() + ".");
+        }
+
+        try {
+            Thread.sleep(100);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        SocketHelper socketHelper = new SocketHelper(socket);
+        IoTPacketSectionList packetSectionList = new IoTPacketSectionList();
+
+// Header
+        packetSectionList.add("ZIoT");
+        // Version
+        packetSectionList.add((byte) 0);
+        // Session ID
+        packetSectionList.add((int) (Math.random() * Integer.MAX_VALUE));
+        packetSectionList.add("info");
+        packetSectionList.add("actions");
+
+        try {
+            socketHelper.out.write(packetSectionList.getNetworkResponse());
+            socketHelper.out.flush();
+
+            if (!Arrays.equals("ZIoT".getBytes(), socketHelper.in.readNBytes(4))) {
+                log.error("Did not receive ZIoT when getting actions from external node.");
+            }
+
+            System.out.println("Session ID: " + socketHelper.readInt());
+            int numberOfActions = socketHelper.readInt();
+            System.out.println("Number of Actions: " + numberOfActions);
+
+            IoTNodeDAO nodeDAO = new IoTNodeDAO();
+            IoTActionDAO actionDAO = new IoTActionDAO();
+
+            for (int i = 0; i < numberOfActions; i++) {
+                IoTAction action = new ExternalIoTAction();
+                // Action UUID
+                action.setUuid(socketHelper.readUUID());
+
+                // Action Node
+                UUID actionNodeUuid = socketHelper.readUUID();
+                // This may throw. Need to check for non-existent node
+                log.trace("Action Node UUID: " + actionNodeUuid.toString());
+                IoTNode actionNode = nodeDAO.getNodeByUUID(actionNodeUuid);
+                if(actionNode == null) {
+                    throw new RuntimeException("Unexpected null IoTNode.");
+                }
+                action.setNode(actionNode);
+
+                action.setName(socketHelper.readString());
+                action.setSecurityLevel(socketHelper.readByte());
+                action.setArguments(socketHelper.readByte());
+                action.setEncrypted(socketHelper.readBoolean());
+                action.setLocal(socketHelper.readBoolean());
+
+                if(action.getNode().equals(selfNode)) {
+                    continue;
+                }
+                actionDAO.persistOrUpdate(action);
+            }
+
+
+            socketHelper.close();
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            try {
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            externalNodeConnections.remove(node.getUuid());
+
+        }
+    }
+
     private void createAndStartNewThread(Runnable runnable) {
         Thread t = new Thread(runnable);
         t.start();
@@ -384,6 +483,14 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     public void close(boolean join) {
         // Mark the server as closed
         closed.setOpaque(true);
+
+        for(var entry : externalNodeConnections.entrySet()) {
+            try {
+                entry.getValue().close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
 
         // Close original sockets
         if (datagramSocketHelper != null && !datagramSocketHelper.isClosed()) {

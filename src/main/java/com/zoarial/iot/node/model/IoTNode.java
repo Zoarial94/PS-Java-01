@@ -26,6 +26,7 @@ public class IoTNode {
     private byte nodeType;
     @Column(nullable = false)
     private long lastHeardFrom;
+    private byte[] lastIp;
 
     // Map to the class member 'node' in IoTAction
     @OneToMany(mappedBy = "node")
