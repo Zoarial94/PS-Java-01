@@ -219,8 +219,8 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             System.exit(0);
             return "Shutting down...";
         });
-        createNewJavaIoTAction("GetUptime", (byte) 0, (byte) 4, true, true, (list) -> String.valueOf(System.currentTimeMillis() - startTime));
-        createNewJavaIoTAction("Print", (byte) 1, (byte) 4, true, true, (list) -> {
+        createNewJavaIoTAction("GetUptime", (byte) 0, (byte) 4, false, false, (list) -> String.valueOf(System.currentTimeMillis() - startTime));
+        createNewJavaIoTAction("Print", (byte) 1, (byte) 4, false, false, (list) -> {
             println("Being asked to print: \"" + list.get(0).getString() + "\"");
             return "Printed";
         });
@@ -420,7 +420,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 // Action Node
                 UUID actionNodeUuid = socketHelper.readUUID();
                 // This may throw. Need to check for non-existent node
-                log.trace("Action Node UUID: " + actionNodeUuid.toString());
                 IoTNode actionNode = nodeDAO.getNodeByUUID(actionNodeUuid);
                 if(actionNode == null) {
                     throw new RuntimeException("Unexpected null IoTNode.");
