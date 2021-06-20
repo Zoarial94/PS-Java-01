@@ -378,24 +378,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public void getAndUpdateInfoAboutNode(IoTNode node) {
-        Socket socket = externalNodeConnections.get(node.getUuid());
-        if (socket == null || socket.isClosed()) {
-            log.trace("Socket to node " + node.getHostname() + " does not exist. Creating one...");
-            try {
-                printArray(node.getLastIp());
-                socket = new Socket(InetAddress.getByAddress(node.getLastIp()), getServerInfo().serverPort);
-                externalNodeConnections.put(node.getUuid(), socket);
-            } catch (UnknownHostException e) {
-                e.printStackTrace();
-                log.error("Unable to get InetAddress from bytes.");
-                return;
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.error("Unable to connect to node");
-                return;
-            }
-            log.trace("Created socket for " + node.getHostname() + ".");
-        }
+        Socket socket = getExternalNodeSocket(node);
 
         try {
             Thread.sleep(100);
@@ -457,7 +440,6 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             }
 
 
-            socketHelper.close();
         } catch (Exception ex) {
             ex.printStackTrace();
             try {
@@ -468,6 +450,79 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             externalNodeConnections.remove(node.getUuid());
 
         }
+    }
+
+    public String runRemoteAction(IoTAction action, JSONObject args) {
+        if(action.getNode().equals(selfNode)) {
+            log.error("Action " + action.getName() + " has been run remotely instead of locally.");
+            return "This action is local, but has been run as remote. This is an error.";
+        }
+
+        Socket socket;
+        try {
+            socket = getExternalNodeSocket(action.getNode());
+        } catch (RuntimeException ex) {
+            return "There was an error creating the socket.";
+        }
+        SocketHelper socketHelper = new SocketHelper(socket);
+
+        IoTPacketSectionList packetSectionList = new IoTPacketSectionList();
+
+        // Header
+        packetSectionList.add("ZIoT");
+        // Version
+        packetSectionList.add((byte)0);
+        // Session ID
+        int sessionID = (int)(Math.random() * Integer.MAX_VALUE);
+        System.out.println("Created SessionID: " + sessionID);
+        packetSectionList.add(sessionID);
+        packetSectionList.add("action");
+        packetSectionList.add(action.getUuid());
+
+        packetSectionList.add(args.toString());
+
+        String response;
+        try {
+            socketHelper.out.write(packetSectionList.getNetworkResponse());
+            socketHelper.out.flush();
+
+            if(!Arrays.equals("ZIoT".getBytes(), socketHelper.in.readNBytes(4))) {
+                throw new RuntimeException("Was not ZIoT response");
+            }
+
+            System.out.println("Session ID: " + socketHelper.readInt());
+
+
+            response = socketHelper.readString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            response = "There was an error running the action remotely";
+        }
+
+        return response;
+
+    }
+
+    private Socket getExternalNodeSocket(IoTNode node) {
+        Socket socket = externalNodeConnections.get(node.getUuid());
+        if (socket == null || socket.isClosed()) {
+            log.trace("Socket to node " + node.getHostname() + " does not exist. Creating one...");
+            try {
+                printArray(node.getLastIp());
+                socket = new Socket(InetAddress.getByAddress(node.getLastIp()), getServerInfo().serverPort);
+                externalNodeConnections.put(node.getUuid(), socket);
+            } catch (UnknownHostException e) {
+                e.printStackTrace();
+                log.error("Unable to get InetAddress from bytes.");
+                throw new RuntimeException();
+            } catch (IOException e) {
+                e.printStackTrace();
+                log.error("Unable to connect to node");
+                throw new RuntimeException();
+            }
+            log.trace("Created socket for " + node.getHostname() + ".");
+        }
+        return socket;
     }
 
     private void createAndStartNewThread(Runnable runnable) {

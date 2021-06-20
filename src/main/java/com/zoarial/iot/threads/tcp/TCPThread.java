@@ -32,7 +32,7 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     private final IoTActionDAO ioTActionDAO = new IoTActionDAO();
 
     public TCPThread(ServerServer server, SocketHelper inSocket) {
-        super("HeadTCPThread" + idNumber.getAndIncrement());
+        super("TCPThread" + idNumber.getAndIncrement());
         _inSocket = inSocket;
         _server = server;
     }
@@ -115,14 +115,12 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                             if(optAction.isPresent()) {
                                 var action = optAction.get();
                                 if(!action.getNode().equals(_server.getSelfNode())) {
-                                    respondToSession(session, "I can't run other node's actions yet.");
-                                }
-                                // Check access
-                                if(action.isLocal() && !_inSocket.isLocal()) {
-                                    respondToSession(session, "You don't have access to this ");
+                                    respondToSession(session, _server.runRemoteAction(action, jsonObject));
+                                } else if(action.isLocal() && !_inSocket.isLocal()) {
+                                    respondToSession(session, "You don't have access to this. (Local).");
                                     // Check assess
                                 } else if(action.isEncrypted() && !(_inSocket.isEncrypted() || _inSocket.isLocal())) {
-                                    respondToSession(session, "You don't have access to this.");
+                                    respondToSession(session, "You don't have access to this. (Encrypted).");
                                     // You have access, start doing stuff
                                 } else {
 
