@@ -1,7 +1,7 @@
 # ZoarialIoT-Java-Node
 >ZoarialIoT is currently in its early alpha stages.
 
-ZoarialIoT is an alternative to the other IoT protocols. ZoarialIoT is designed to be much more flexable, while also providing good security.
+ZoarialIoT is an alternative to the other IoT protocols. ZoarialIoT is designed to be flexable, while also providing good security.
 ZoarialIoT is designed to be completely local, completely configurable, secure by default, and distributed with some centralization.
 
 
@@ -53,7 +53,7 @@ The security level tells the server what level of authentication is needed
 The encrypted toggle says whether the node should be contacted over an encryped channel. (This will likely be SSH-like)
 
 #### Local toggle
-The local toggle says whether the action has to be run from localhost or not
+The local toggle says whether the action has to be run from localhost or not.
 
 When true, the action can _**NOT**_ be run remotely
 
