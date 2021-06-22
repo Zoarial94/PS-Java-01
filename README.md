@@ -44,7 +44,7 @@ There are a few options to configure the security on an action
 
 #### Security Level
 The security level tells the server what level of authentication is needed
-> Connection from localhost overrides the need for this
+> Connections from localhost overrides the need for this
   - Level 0: No authentication
   - Level 1: Basic authentication - HTOP/TOTP
   - Level 2: Strong authentication - Public/Private Keys
