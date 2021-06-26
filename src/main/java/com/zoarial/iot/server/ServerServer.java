@@ -364,6 +364,10 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             println("JavaIoTAction was not in database. Adding now:\n" + action);
             ioTActionDAO.persist(action);
         } else {
+            if(!dbAction.getNode().equals(selfNode)) {
+                dbAction.setNode(selfNode);
+                ioTActionDAO.update(dbAction);
+            }
             // Updated database in the case something has changed
             action.setUuid(dbAction.getUuid());
             if (!dbAction.isEnabled() || !dbAction.isValid()) {
@@ -416,9 +420,11 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 IoTAction action = new ExternalIoTAction();
                 // Action UUID
                 action.setUuid(socketHelper.readUUID());
+                log.trace("Remote action UUID: " + action.getUuid());
 
                 // Action Node
                 UUID actionNodeUuid = socketHelper.readUUID();
+                log.trace("Remote action node UUID: " + actionNodeUuid);
                 // This may throw. Need to check for non-existent node
                 IoTNode actionNode = nodeDAO.getNodeByUUID(actionNodeUuid);
                 if(actionNode == null) {
