@@ -1,4 +1,4 @@
-package com.zoarial.iot.action.javaAction;
+package com.zoarial.iot.action.helper;
 
 import com.zoarial.iot.action.model.IoTActionArgumentList;
 
