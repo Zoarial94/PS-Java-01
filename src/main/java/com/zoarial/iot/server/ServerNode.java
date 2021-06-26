@@ -74,6 +74,10 @@ public class ServerNode extends PrintBaseClass {
             return false;
         }
 
+        if(!prop.containsKey(DEVICE + "uuid")) {
+            println("Generating new UUID.");
+            prop.setProperty(DEVICE + "uuid", UUID.randomUUID().toString());
+        }
         _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid", UUID.randomUUID().toString()));
 
         _hostname = prop.getProperty(DEVICE + "hostname", "PS-testing1");
@@ -145,13 +149,13 @@ public class ServerNode extends PrintBaseClass {
         ServerInformation serverInfo = _server.getServerInfo();
         if(!serverInfo.equals(oldInfo)) {
             println("Updating config file.");
-            prop.setProperty(DEVICE + "uuid", serverInfo.uuid.toString());
             prop.setProperty(DEVICE + "headNode1", serverInfo.headNodes.get(0).getHostAddress());
             prop.setProperty(DEVICE + "headNode2", serverInfo.headNodes.get(1).getHostAddress());
             prop.setProperty(DEVICE + "headNode3", serverInfo.headNodes.get(2).getHostAddress());
             try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
                 prop.store(outputStream, "Updated");
             } catch (IOException ignored) {
+                throw new RuntimeException("Unable to update properties in config file.");
             }
         }
         if(join) {
