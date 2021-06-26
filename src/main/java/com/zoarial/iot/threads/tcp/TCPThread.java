@@ -146,6 +146,10 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 break;
                             }
                             var action = optAction.get();
+                            if(!action.getNode().equals(_server.getSelfNode())) {
+                                respondToSession(session, "I can't update other node's actions.");
+                                break;
+                            }
                             switch(str) {
                                 case "securityLevel" -> action.setSecurityLevel(_inSocket.readByte());
                                 case "encrypt" -> action.setEncrypted(_inSocket.readBoolean());

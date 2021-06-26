@@ -55,8 +55,7 @@ public abstract class IoTAction implements Serializable {
      * This action can be run from a higher level, but not a lower one.
      * Level 0 means no security
      * Level 1 means basic security. Needs HTOP or TOTP
-     * Level 2 needs stronger identification (public/protected keys)
-     * Level 10 means only the local machine can run it.
+     * Level 2 needs stronger identification (public/private keys)
      */
     protected byte securityLevel;
     protected byte arguments;
