@@ -1,7 +1,7 @@
 package com.zoarial.iot.server;
 
 import com.zoarial.*;
-import com.zoarial.iot.action.javaAction.JavaIoTActionExecHelper;
+import com.zoarial.iot.action.helper.JavaIoTActionExecHelper;
 import com.zoarial.iot.action.model.*;
 import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.action.dao.IoTActionDAO;
@@ -381,7 +381,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
         Socket socket = getExternalNodeSocket(node);
 
         try {
-            Thread.sleep(100);
+            Thread.sleep(1000);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

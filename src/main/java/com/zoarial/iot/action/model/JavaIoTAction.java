@@ -1,6 +1,6 @@
 package com.zoarial.iot.action.model;
 
-import com.zoarial.iot.action.javaAction.JavaIoTActionExecHelper;
+import com.zoarial.iot.action.helper.JavaIoTActionExecHelper;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -8,7 +8,6 @@ import lombok.Setter;
 
 import javax.persistence.Entity;
 import javax.persistence.Transient;
-import java.util.UUID;
 import java.util.function.Function;
 
 @Entity
