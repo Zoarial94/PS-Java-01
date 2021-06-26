@@ -77,6 +77,11 @@ public class ServerNode extends PrintBaseClass {
         if(!prop.containsKey(DEVICE + "uuid")) {
             println("Generating new UUID.");
             prop.setProperty(DEVICE + "uuid", UUID.randomUUID().toString());
+            try(final OutputStream outputStream = new FileOutputStream(CONFIG_FILE)) {
+                prop.store(outputStream, "Updated UUID");
+            } catch (IOException ignored) {
+                throw new RuntimeException("Unable to update properties in config file.");
+            }
         }
         _uuid = UUID.fromString(prop.getProperty(DEVICE + "uuid", UUID.randomUUID().toString()));
 
