@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -64,7 +65,14 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
 
     public void run() {
 
-        println("Starting thread...");
+        println("Starting thread on port " + _ds.getLocalPort());
+        /*
+        try {
+            _ds.setSoTimeout(10000);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+         */
 
         while(!_server.isClosed() && !_ds.isClosed()) {
             DatagramPacket dp = new DatagramPacket(new byte[BUF_SIZE], BUF_SIZE);
@@ -72,8 +80,10 @@ public class DatagramSocketHelper extends PrintBaseClass implements Runnable {
                 _ds.receive(dp);
                 println("Received packet, adding to queue.");
                 _queue.put(dp);
-            } catch (SocketException | InterruptedException ex){
+            } catch (SocketException | InterruptedException ex) {
                 println("Interrupted, no longer receiving new packets.");
+            } catch (SocketTimeoutException ignore) {
+                println("Timeout");
             } catch (IOException e) {
                 e.printStackTrace();
                 println("Something went wrong!");

@@ -172,7 +172,7 @@ public class ServerServer extends PrintBaseClass implements Runnable {
                 serverSocketHelper = new ServerSocketHelper(this, new ServerSocket(serverInfo.serverPort));
                 createAndStartNewThread(serverSocketHelper);
 
-                datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(serverInfo.serverPort));
+                datagramSocketHelper = new DatagramSocketHelper(this, new DatagramSocket(serverInfo.serverPort, serverIP));
                 createAndStartNewThread(datagramSocketHelper);
 
             } catch (IOException ex) {
@@ -382,7 +382,16 @@ public class ServerServer extends PrintBaseClass implements Runnable {
     }
 
     public void getAndUpdateInfoAboutNode(IoTNode node) {
-        Socket socket = getExternalNodeSocket(node);
+        Optional<Socket> optionalSocket;
+        Socket socket;
+
+        optionalSocket = getExternalNodeSocket(node);
+        if(optionalSocket.isPresent()) {
+            socket = optionalSocket.get();
+        } else {
+            log.error("There was an error trying to update info about node: " + node.getHostname());
+            return;
+        }
 
         try {
             Thread.sleep(1000);
@@ -463,12 +472,16 @@ public class ServerServer extends PrintBaseClass implements Runnable {
             return "This action is local, but has been run as remote. This is an error.";
         }
 
+        Optional<Socket> optionalSocket;
         Socket socket;
-        try {
-            socket = getExternalNodeSocket(action.getNode());
-        } catch (RuntimeException ex) {
+
+        optionalSocket = getExternalNodeSocket(action.getNode());
+        if(optionalSocket.isPresent()) {
+            socket = optionalSocket.get();
+        } else {
             return "There was an error creating the socket.";
         }
+
         SocketHelper socketHelper = new SocketHelper(socket);
 
         IoTPacketSectionList packetSectionList = new IoTPacketSectionList();
@@ -508,26 +521,38 @@ public class ServerServer extends PrintBaseClass implements Runnable {
 
     }
 
-    private Socket getExternalNodeSocket(IoTNode node) {
+    private Optional<Socket> getExternalNodeSocket(IoTNode node) {
         Socket socket = externalNodeConnections.get(node.getUuid());
         if (socket == null || socket.isClosed()) {
             log.trace("Socket to node " + node.getHostname() + " does not exist. Creating one...");
+            InetAddress addr;
+
+            try {
+                addr = InetAddress.getByAddress(node.getLastIp());
+            } catch (UnknownHostException e) {
+                log.error("Invalid ip address.");
+                return Optional.empty();
+            }
+
             try {
                 printArray(node.getLastIp());
-                socket = new Socket(InetAddress.getByAddress(node.getLastIp()), getServerInfo().serverPort);
+                socket = new Socket(addr, getServerInfo().serverPort);
                 externalNodeConnections.put(node.getUuid(), socket);
             } catch (UnknownHostException e) {
                 e.printStackTrace();
                 log.error("Unable to get InetAddress from bytes.");
-                throw new RuntimeException();
+                return Optional.empty();
+            } catch (ConnectException ignore) {
+                log.error("Unable to connect to remote node: " + addr.getHostAddress());
+                return Optional.empty();
             } catch (IOException e) {
                 e.printStackTrace();
                 log.error("Unable to connect to node");
-                throw new RuntimeException();
+                return Optional.empty();
             }
             log.trace("Created socket for " + node.getHostname() + ".");
         }
-        return socket;
+        return Optional.of(socket);
     }
 
     private void createAndStartNewThread(Runnable runnable) {
