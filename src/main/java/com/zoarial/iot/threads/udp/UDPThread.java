@@ -178,8 +178,7 @@ public class UDPThread extends PrintBaseClass implements Runnable {
 
             System.arraycopy(_server.getServerIP().getAddress(), 0, response, 4, 4);
 
-            DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), _server.getServerInfo().serverPort);
-
+            DatagramPacket dpResponse = new DatagramPacket(response, response.length, dp.getAddress(), dp.getPort());
 
             _datagramSocketHelper.send(dpResponse);
 
