@@ -1,7 +1,7 @@
 package com.zoarial.iot.dao;
 
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
+import jakarta.persistence.EntityManagerFactory;
+import jakarta.persistence.Persistence;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DAOHelper {

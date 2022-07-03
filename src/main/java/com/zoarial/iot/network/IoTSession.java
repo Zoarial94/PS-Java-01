@@ -1,6 +1,5 @@
 package com.zoarial.iot.network;
 
-import javax.print.attribute.standard.MediaSize;
 
 // TODO: refactor all uses of this class
 public class IoTSession {

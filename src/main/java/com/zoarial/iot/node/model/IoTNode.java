@@ -4,7 +4,7 @@ import com.zoarial.iot.action.model.IoTAction;
 import lombok.Getter;
 import lombok.Setter;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -19,7 +19,7 @@ import java.util.UUID;
 })
 public class IoTNode {
     @Id
-    @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
+    @Column(unique = true, nullable = false)
     private UUID uuid;
     private String hostname;
     @Column(nullable = false)

@@ -4,7 +4,7 @@ import com.zoarial.PrintBaseClass;
 import com.zoarial.iot.dao.DAOHelper;
 import com.zoarial.iot.node.model.IoTNode;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.List;
 import java.util.UUID;
 

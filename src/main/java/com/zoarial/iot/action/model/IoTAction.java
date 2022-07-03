@@ -7,7 +7,7 @@ import lombok.experimental.FieldDefaults;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
@@ -27,7 +27,7 @@ import java.util.UUID;
 @Setter
 public abstract class IoTAction implements Serializable {
     // UUID is 16 bytes (128 bits)
-    @Id @Column(unique = true, nullable = false, columnDefinition = "binary(16)")
+    @Id @Column(unique = true, nullable = false)
     protected UUID uuid;
     @Column(nullable = false)
     protected String name;

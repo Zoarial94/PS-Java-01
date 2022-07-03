@@ -12,5 +12,5 @@ public class ServerPublic {
     static public final String DEVICE = PREFIX + "device.";
     static public final String LOGGING = PREFIX + "logging.";
 
-    static public final String CONFIG_FILE = "/etc/PS-Java-Test.config";
+    static public final String CONFIG_FILE = "/etc/ZIoT/settings.config";
 }

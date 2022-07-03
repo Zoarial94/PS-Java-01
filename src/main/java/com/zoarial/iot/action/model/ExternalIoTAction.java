@@ -2,7 +2,7 @@ package com.zoarial.iot.action.model;
 
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
+import jakarta.persistence.Entity;
 
 @Entity
 @NoArgsConstructor
