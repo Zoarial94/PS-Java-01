@@ -69,7 +69,11 @@
             <version>1.7.36</version>
             <scope>test</scope>
         </dependency>
-
+        <dependency>
+            <groupId>com.zoarial</groupId>
+            <artifactId>ZoarialNetworkArbiter</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build><plugins><plugin>
