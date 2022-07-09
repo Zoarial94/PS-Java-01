@@ -1,7 +1,6 @@
 package com.zoarial.iot.dto;
 
 import lombok.Value;
-import me.zoarial.NetworkArbiter.annotations.ObjectElement;
 import me.zoarial.NetworkArbiter.annotations.ZoarialNetworkObject;
 
 import java.util.ArrayList;
