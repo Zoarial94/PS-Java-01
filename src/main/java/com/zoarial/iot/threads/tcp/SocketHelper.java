@@ -1,7 +1,7 @@
 package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.PrintBaseClass;
-import me.zoarial.NetworkArbiter.ZoarialNetworkArbiter;
+import me.zoarial.networkArbiter.ZoarialNetworkArbiter;
 
 import java.io.*;
 import java.net.Socket;
@@ -20,7 +20,7 @@ public class SocketHelper extends PrintBaseClass {
     public SocketHelper(Socket socket) {
         super("Socket Helper");
         inSocket = socket;
-        networkArbiter = new ZoarialNetworkArbiter(socket);
+        networkArbiter = ZoarialNetworkArbiter.getInstance();
         DataOutputStream tempOut = null;
         DataInputStream tempIn = null;
         BufferedInputStream tempRawIn = null;

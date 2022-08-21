@@ -2,12 +2,15 @@ package com.zoarial.iot.threads.tcp;
 
 import com.zoarial.*;
 import com.zoarial.iot.action.dao.IoTActionDAO;
+import com.zoarial.iot.dto.ZoarialDTO;
 import com.zoarial.iot.node.dao.IoTNodeDAO;
 import com.zoarial.iot.node.model.IoTNode;
 import com.zoarial.iot.action.model.IoTAction;
 import com.zoarial.iot.server.ServerServer;
 import com.zoarial.iot.network.IoTPacketSectionList;
 import com.zoarial.iot.network.IoTSession;
+import com.zoarial.iot.threads.tcp.networkModel.TCPStart;
+import me.zoarial.networkArbiter.ZoarialNetworkArbiter;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -30,6 +33,8 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     private final SocketHelper _inSocket;
     private final IoTNodeDAO ioTNodeDAO = new IoTNodeDAO();
     private final IoTActionDAO ioTActionDAO = new IoTActionDAO();
+
+    private final ZoarialNetworkArbiter networkArbiter = ZoarialNetworkArbiter.getInstance();
 
     public TCPThread(ServerServer server, SocketHelper inSocket) {
         super("TCPThread" + idNumber.getAndIncrement());
@@ -59,57 +64,40 @@ public class TCPThread extends PrintBaseClass implements Runnable {
     private void runLogic() {
         // If we leave this try/catch block, then the socket is closed.
         while (!_server.isClosed() && !_inSocket.inSocket.isClosed()) {
-            String str;
+            String request;
             int otp;
             byte securityLevel;
             try {
-                final String HEADER = "ZIoT";
-                byte[] buf = new byte[256];
-                int read = _inSocket.in.read(buf, 0, 4);
                 securityLevel = 0;
-                // See if the first 4 bytes are ZIoT.
-                // If they aren't then close the thread.
-                if(read != 4) {
-                    println("Not enough data.");
-                    return;
-                }
-                int cmp = Arrays.compare(HEADER.getBytes(), 0, 4, buf, 0, 4);
-                if(cmp != 0) {
-                    println("Not ZIoT.");
-                    return;
-                }
 
-                println("Found ZIoT");
-
-                byte version = _inSocket.in.readByte();
-                if (version != _version) {
+                TCPStart startInfo = networkArbiter.receiveObject(TCPStart.class, _inSocket.inSocket);
+                if (startInfo.getVersion() != _version) {
                     println("Not the correct version.");
-                    continue;
+                    return;
                 }
 
-                int sessionID = _inSocket.in.readInt();
+                int sessionID = startInfo.getSessionId();
                 if (sessions.containsKey(sessionID)) {
                     // Continue working with session
                     println("Continuing to work with session: " + sessionID);
                 } else {
                     IoTSession session = new IoTSession(sessionID);
                     // New session
-                    str = _inSocket.readString();
+                    request = startInfo.getRequest();
                     println("Working with new session: " + sessionID);
-                    println("Request: " + str);
-                    switch (str) {
+                    println("Request: " + request);
+                    switch (request) {
                         case "action" -> {
+                            var actionData = networkArbiter.receiveObject(ZoarialDTO.V1.Request.Action.class, _inSocket.inSocket);
 
-                            UUID uuid = _inSocket.readUUID();
-                            String rawJson = _inSocket.readJson();
+                            JSONObject jsonObject = new JSONObject(actionData.getData());
 
-                            JSONObject jsonObject = new JSONObject(rawJson);
-
-                            if(jsonObject.has("otp")) {
+                            if(actionData.getOtp() != null) {
                                 securityLevel = 1;
                             }
 
                             JSONArray args = jsonObject.getJSONArray("args");
+                            UUID uuid = actionData.getUuid();
                             // Check for the action
                             var optAction = ioTActionDAO.findActionByUUID(uuid);
                             if(optAction.isPresent()) {
@@ -126,20 +114,41 @@ public class TCPThread extends PrintBaseClass implements Runnable {
 
                                     int numOfArguments = action.getArguments();
                                     if (numOfArguments == 0) {
-                                        str = action.execute();
+                                        request = action.execute();
                                     } else {
-                                        str = action.execute(args);
+                                        request = action.execute(args);
                                     }
-                                    respondToSession(session, str);
+                                    respondToSession(session, request);
                                 }
                             } else {
                                 respondToSession(session, "No action with UUID: " + uuid);
                             }
                         }
-                        case "updateAction" -> {
-                            UUID uuid = _inSocket.readUUID();
-                            str = _inSocket.readString();
-                            println("Updating action property " + str + " of " + uuid + ".");
+                        case "updateActionSecurityLevel" -> {
+                            var updateInfo = networkArbiter.receiveObject(ZoarialDTO.V1.Request.UpdateActionSecurityLevel.class, _inSocket.inSocket);
+                            UUID uuid = updateInfo.getUuid();
+                            println("Updating security level of " + uuid + " to: " + updateInfo.getLevel());
+
+                            var optAction = ioTActionDAO.findActionByUUID(uuid);
+                            if(optAction.isEmpty()) {
+                                respondToSession(session, "No action with UUID: " + uuid);
+                                break;
+                            }
+
+                            var action = optAction.get();
+                            if(!action.getNode().equals(_server.getSelfNode())) {
+                                respondToSession(session, "I can't update other node's actions.");
+                                break;
+                            }
+
+                            action.setSecurityLevel(updateInfo.getLevel());
+                            ioTActionDAO.update(action);
+                            respondToSession(session, "Success.");
+                        }
+                        case "updateActionEncrypt" -> {
+                            var updateInfo = networkArbiter.receiveObject(ZoarialDTO.V1.Request.UpdateActionEncrypt.class, _inSocket.inSocket);
+                            UUID uuid = updateInfo.getUuid();
+                            println("Updating encrypt toggle of " + uuid + " to :" + updateInfo.isEncrypt());
                             var optAction = ioTActionDAO.findActionByUUID(uuid);
                             if(optAction.isEmpty()) {
                                 respondToSession(session, "No action with UUID: " + uuid);
@@ -150,20 +159,58 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 respondToSession(session, "I can't update other node's actions.");
                                 break;
                             }
-                            switch(str) {
-                                case "securityLevel" -> action.setSecurityLevel(_inSocket.readByte());
-                                case "encrypt" -> action.setEncrypted(_inSocket.readBoolean());
-                                case "local" -> action.setLocal(_inSocket.readBoolean());
-                                case "desc" -> action.setDescription(_inSocket.readString());
-                                default -> respondToSession(session, "No action attribute: " + str);
+                            action.setEncrypted(updateInfo.isEncrypt());
+                            ioTActionDAO.update(action);
+                            respondToSession(session, "Success.");
+
+                        }
+                        case "updateActionLocal" -> {
+                            var updateInfo = networkArbiter.receiveObject(ZoarialDTO.V1.Request.UpdateActionLocal.class, _inSocket.inSocket);
+                            UUID uuid = updateInfo.getUuid();
+                            println("Updating local toggle of " + uuid + " to: " + updateInfo.isLocal());
+
+                            var optAction = ioTActionDAO.findActionByUUID(uuid);
+                            if(optAction.isEmpty()) {
+                                respondToSession(session, "No action with UUID: " + uuid);
+                                break;
                             }
+
+                            var action = optAction.get();
+                            if(!action.getNode().equals(_server.getSelfNode())) {
+                                respondToSession(session, "I can't update other node's actions.");
+                                break;
+                            }
+
+                            action.setLocal(updateInfo.isLocal());
                             ioTActionDAO.update(action);
                             respondToSession(session, "Success.");
                         }
+                        case "updateActionDescription" -> {
+                            var updateInfo = networkArbiter.receiveObject(ZoarialDTO.V1.Request.UpdateActionDescription.class, _inSocket.inSocket);
+                            UUID uuid = updateInfo.getUuid();
+                            println("Updating local toggle of " + uuid + " to: " + updateInfo.getDescription());
+
+                            var optAction = ioTActionDAO.findActionByUUID(uuid);
+                            if(optAction.isEmpty()) {
+                                respondToSession(session, "No action with UUID: " + uuid);
+                                break;
+                            }
+
+                            var action = optAction.get();
+                            if(!action.getNode().equals(_server.getSelfNode())) {
+                                respondToSession(session, "I can't update other node's actions.");
+                                break;
+                            }
+
+                            action.setDescription(updateInfo.getDescription());
+                            ioTActionDAO.update(action);
+                            respondToSession(session, "Success.");
+
+                        }
                         case "info" -> {
-                            str = _inSocket.readString();
-                            println("Request info: " + str);
-                            switch (str) {
+                            request = _inSocket.readString();
+                            println("Request info: " + request);
+                            switch (request) {
                                 case "action" -> {
                                     UUID actionUUID = _inSocket.readUUID();
                                     println("Responding info about action: " + actionUUID);
@@ -192,10 +239,10 @@ public class TCPThread extends PrintBaseClass implements Runnable {
                                 case "nodes" -> {
                                     respondNodeList(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO));
                                 }
-                                default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + str);
+                                default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.INFO), "Unknown option to get: " + request);
                             }
                         }
-                        default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid request: " + str);
+                        default -> respondToSession(new IoTSession(sessionID, IoTSession.IoTSessionType.OTHER), "Invalid request: " + request);
                     }
                 }
 
