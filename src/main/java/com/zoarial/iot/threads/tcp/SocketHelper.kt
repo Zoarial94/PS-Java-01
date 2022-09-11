@@ -57,7 +57,7 @@ class SocketHelper(val inSocket: Socket) : PrintBaseClass("Socket Helper") {
     @Throws(IOException::class)
     fun readValue(): String {
         val str = StringBuilder()
-        var b = `in`!!.readByte()
+        var b = `in`.readByte()
         while (b != ','.code.toByte() && b != '.'.code.toByte()) {
             str.append(Char(b.toUShort()))
             b = `in`.readByte()
@@ -68,7 +68,7 @@ class SocketHelper(val inSocket: Socket) : PrintBaseClass("Socket Helper") {
     @Throws(IOException::class)
     fun readString(): String {
         val str = StringBuilder()
-        var b = `in`!!.readByte()
+        var b = `in`.readByte()
         while (b.toInt() != 0) {
             str.append(Char(b.toUShort()))
             b = `in`.readByte()
@@ -78,33 +78,33 @@ class SocketHelper(val inSocket: Socket) : PrintBaseClass("Socket Helper") {
 
     @Throws(IOException::class)
     fun readUUID(): UUID {
-        return UUID(`in`!!.readLong(), `in`.readLong())
+        return UUID(`in`.readLong(), `in`.readLong())
     }
 
     @Throws(IOException::class)
     fun readInt(): Int {
-        return `in`!!.readInt()
+        return `in`.readInt()
     }
 
     @Throws(IOException::class)
     fun readLong(): Long {
-        return `in`!!.readLong()
+        return `in`.readLong()
     }
 
     @Throws(IOException::class)
     fun readByte(): Byte {
-        return `in`!!.readByte()
+        return `in`.readByte()
     }
 
     @Throws(IOException::class)
     fun readBoolean(): Boolean {
-        return `in`!!.readBoolean()
+        return `in`.readBoolean()
     }
 
     @Throws(IOException::class)
     fun readJson(): String {
         val json = StringBuilder()
-        var b = `in`!!.readByte()
+        var b = `in`.readByte()
         if (b != '{'.code.toByte()) {
             return ""
         }
@@ -132,8 +132,8 @@ class SocketHelper(val inSocket: Socket) : PrintBaseClass("Socket Helper") {
 
     @Throws(IOException::class)
     fun close() {
-        out!!.close()
-        `in`!!.close()
+        out.close()
+        `in`.close()
         inSocket.close()
     }
 }

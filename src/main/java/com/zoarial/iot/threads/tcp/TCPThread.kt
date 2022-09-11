@@ -224,7 +224,7 @@ class TCPThread(private val _server: ServerServer, private val _inSocket: Socket
 
                 // We have to flush otherwise, out data may never be sent.
                 // TODO: fixing the shutdown would prevent the need for this
-                _inSocket.out!!.flush()
+                _inSocket.out.flush()
             } catch (e: EOFException) {
                 println("End of file: should be closed!")
                 return  // Cleanup is done after function returns

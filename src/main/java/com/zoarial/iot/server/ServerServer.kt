@@ -12,11 +12,13 @@ import com.zoarial.iot.node.model.IoTNode
 import com.zoarial.iot.threads.tcp.ServerSocketHelper
 import com.zoarial.iot.threads.tcp.SocketHelper
 import com.zoarial.iot.threads.tcp.TCPAcceptingThread
+import com.zoarial.iot.threads.tcp.networkModel.TCPStart
 import com.zoarial.iot.threads.udp.DatagramSocketHelper
 import com.zoarial.iot.threads.udp.UDPThread
 import lombok.AccessLevel
 import lombok.Getter
 import lombok.extern.slf4j.Slf4j
+import me.zoarial.networkArbiter.ZoarialNetworkArbiter
 import org.json.JSONArray
 import org.json.JSONObject
 import org.slf4j.Logger
@@ -77,6 +79,8 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
 
     // Used for GetUptime action
     private var startTime: Long = 0
+
+    private val networkArbiter: ZoarialNetworkArbiter = ZoarialNetworkArbiter
 
     init {
         println("Initializing...")
@@ -333,6 +337,8 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
         }
     }
 
+    fun registerRequest(requestName: String, )
+
     fun getAndUpdateInfoAboutNode(node: IoTNode) {
         val optionalSocket: Optional<Socket> = getExternalNodeSocket(node)
         val socket: Socket = if (optionalSocket.isPresent) {
@@ -346,21 +352,24 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
         } catch (e: InterruptedException) {
             e.printStackTrace()
         }
+
+        networkArbiter.sendObject(TCPStart(0, (Math.random() * Int.MAX_VALUE).toInt(), ))
+
         val socketHelper = SocketHelper(socket)
         val packetSectionList = IoTPacketSectionList()
 
-// Header
+        // Header
         packetSectionList.add("ZIoT")
         // Version
         packetSectionList.add(0.toByte())
         // Session ID
-        packetSectionList.add((Math.random() * Int.MAX_VALUE).toInt())
+        packetSectionList.add()
         packetSectionList.add("info")
         packetSectionList.add("actions")
         try {
             socketHelper.out.write(packetSectionList.networkResponse)
-            socketHelper.out!!.flush()
-            if (!Arrays.equals("ZIoT".toByteArray(), socketHelper.`in`!!.readNBytes(4))) {
+            socketHelper.out.flush()
+            if (!Arrays.equals("ZIoT".toByteArray(), socketHelper.`in`.readNBytes(4))) {
                 log.error("Did not receive ZIoT when getting actions from external node.")
             }
             println("Session ID: " + socketHelper.readInt())

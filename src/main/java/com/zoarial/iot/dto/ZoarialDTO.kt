@@ -91,7 +91,10 @@ enum class ZoarialDTO {
 
             // Get a list of all actions
             @ZoarialNetworkObject
-            class InfoActions
+            class InfoActions {
+                @ZoarialObjectElement(placement = 1)
+                var sessionId: Long? = null
+            }
 
             // Get general information about a node
             @ZoarialNetworkObject
