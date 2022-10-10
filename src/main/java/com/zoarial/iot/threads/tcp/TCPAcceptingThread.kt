@@ -1,6 +1,8 @@
 package com.zoarial.iot.threads.tcp
 
 import com.zoarial.PrintBaseClass
+import com.zoarial.iot.dto.ZoarialDTO
+import com.zoarial.iot.model.RequestContext
 import com.zoarial.iot.server.ServerServer
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -12,6 +14,8 @@ class TCPAcceptingThread(private val _server: ServerServer, private val _serverS
         if (_started.compareAndSet(false, true)) {
             // We acquired the lock, start the thread.
             println("Starting...")
+            println("Adding TCP requests to map")
+            addTCPRequestsToMap()
 
             // Start
             loop()
@@ -43,6 +47,40 @@ class TCPAcceptingThread(private val _server: ServerServer, private val _serverS
         }
     }
 
+    private fun addTCPRequestsToMap() {
+        _server.registerRequest("action", ZoarialDTO.V1.Request.Action::class) { actionData: ZoarialDTO.V1.Request.Action, context: RequestContext ->
+            return@registerRequest ""
+        }
+        
+        _server.registerRequest("updateActionSecurityLevel", ZoarialDTO.V1.Request.UpdateActionSecurityLevel::class){ actionData: ZoarialDTO.V1.Request.UpdateActionSecurityLevel, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("updateActionEncrypt", ZoarialDTO.V1.Request.UpdateActionEncrypt::class){ actionData: ZoarialDTO.V1.Request.UpdateActionEncrypt, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("updateActionLocal", ZoarialDTO.V1.Request.UpdateActionDescription::class) { actionData: ZoarialDTO.V1.Request.UpdateActionDescription, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("infoAction", ZoarialDTO.V1.Request.InfoAction::class){ actionData: ZoarialDTO.V1.Request.InfoAction, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("infoActions", ZoarialDTO.V1.Request.InfoActions::class){ actionData: ZoarialDTO.V1.Request.InfoActions, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("infoGeneral", ZoarialDTO.V1.Request.InfoGeneral::class){ actionData: ZoarialDTO.V1.Request.InfoGeneral, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+        _server.registerRequest("infoNodes", ZoarialDTO.V1.Request.InfoNodes::class){ actionData: ZoarialDTO.V1.Request.InfoNodes, context: RequestContext ->
+            return@registerRequest ""
+        }
+
+    }
     companion object {
         private val _started = AtomicBoolean(false)
     }

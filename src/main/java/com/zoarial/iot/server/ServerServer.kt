@@ -5,6 +5,8 @@ import com.zoarial.iot.action.dao.IoTActionDAO
 import com.zoarial.iot.action.helper.JavaIoTActionExecHelper
 import com.zoarial.iot.action.model.*
 import com.zoarial.iot.dao.DAOHelper
+import com.zoarial.iot.dto.ZoarialDTO
+import com.zoarial.iot.model.RequestContext
 import com.zoarial.iot.model.ServerInformation
 import com.zoarial.iot.network.IoTPacketSectionList
 import com.zoarial.iot.node.dao.IoTNodeDAO
@@ -17,7 +19,6 @@ import com.zoarial.iot.threads.udp.DatagramSocketHelper
 import com.zoarial.iot.threads.udp.UDPThread
 import lombok.AccessLevel
 import lombok.Getter
-import lombok.extern.slf4j.Slf4j
 import me.zoarial.networkArbiter.ZoarialNetworkArbiter
 import org.json.JSONArray
 import org.json.JSONObject
@@ -29,9 +30,13 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.*
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.function.BiFunction
 import java.util.function.Function
 import java.util.stream.Stream
+import kotlin.collections.HashMap
+import kotlin.reflect.KClass
 import kotlin.system.exitProcess
 
 /*
@@ -82,6 +87,8 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
 
     private val networkArbiter: ZoarialNetworkArbiter = ZoarialNetworkArbiter
 
+    private val networkRequestMap: Map<String, Any> = ConcurrentHashMap()
+
     init {
         println("Initializing...")
         serverInfo = info
@@ -126,6 +133,7 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
         // Generate the IoTActions list, so we can know what we can do
         generateIoTActions()
         serverIP = tmpInetAddress
+
     }
 
     override fun run() {
@@ -337,7 +345,10 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
         }
     }
 
-    fun registerRequest(requestName: String, )
+    fun <T : Any> registerRequest(requestName: String, ZIoTRequest: KClass<T>, exec: BiFunction<T, RequestContext, String>) {
+
+
+    }
 
     fun getAndUpdateInfoAboutNode(node: IoTNode) {
         val optionalSocket: Optional<Socket> = getExternalNodeSocket(node)
