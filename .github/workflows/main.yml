@@ -36,6 +36,8 @@ jobs:
           path: ~/.m2
           key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
           restore-keys: ${{ runner.os }}-m2
+      - name: Use custom ZoarialNetworkArbiter artifact
+        run: mvn install:install-file -Dfile=${{ github.workspace }}/ZoarialNetworkArbiter-1.0-SNAPSHOT.jar -DgroupId=com.zoarial -DartifactId=ZoarialNetworkArbiter -Dversion=1.0-SNAPSHOT -Dpackaging=jar
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
