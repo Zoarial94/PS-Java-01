@@ -94,6 +94,10 @@ enum class ZoarialDTO {
             class InfoActions {
                 @ZoarialObjectElement(placement = 1)
                 var sessionId: Long? = null
+                @ZoarialObjectElement(placement = 2)
+                var numberOfActions: Int? = null
+                @ZoarialObjectElement(placement = 3)
+                var actions: List<Action>? = null
             }
 
             // Get general information about a node

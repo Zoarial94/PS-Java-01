@@ -87,7 +87,8 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
 
     private val networkArbiter: ZoarialNetworkArbiter = ZoarialNetworkArbiter
 
-    private val networkRequestMap: Map<String, Any> = ConcurrentHashMap()
+    private val networkRequestMap: ConcurrentHashMap<String, KClass<Any>> = ConcurrentHashMap()
+    private val requestCallbackMap: ConcurrentHashMap<KClass<Any>, BiFunction<Any, RequestContext, String>> = ConcurrentHashMap()
 
     init {
         println("Initializing...")
@@ -208,16 +209,16 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
             val uuid = UUID.fromString(list[0].string)
             println("UUID: $uuid")
             val optAction = ioTActionDAO.findActionByUUID(uuid)
-            if (optAction.isEmpty) {
-                return@createNewJavaIoTAction "There is no new action with that UUID."
+            return@createNewJavaIoTAction if (optAction.isEmpty) {
+                "There is no new action with that UUID."
             } else {
                 val action = optAction.get()
                 if (action.isValid) {
                     action.enable()
-                    return@createNewJavaIoTAction "Success."
+                    "Success."
                 } else {
                     action.disable()
-                    return@createNewJavaIoTAction "That action is not valid."
+                    "That action is not valid."
                 }
             }
         }
@@ -228,37 +229,37 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
                 return@createNewJavaIoTAction "Invalid security level"
             }
             val optAction = ioTActionDAO.findActionByUUID(uuid)
-            if (optAction.isPresent) {
+            return@createNewJavaIoTAction if (optAction.isPresent) {
                 val action = optAction.get()
                 action.securityLevel = level
                 ioTActionDAO.update(action)
-                return@createNewJavaIoTAction "Security level set."
+                "Security level set."
             } else {
-                return@createNewJavaIoTAction "No action with that UUID found."
+                "No action with that UUID found."
             }
         }
         createNewJavaIoTAction("UpdateEncryptedToggle", 2.toByte(), 4.toByte(), true, true) { list: IoTActionArgumentList? ->
             val uuid = UUID.fromString(list!![0].string)
             val optAction = ioTActionDAO.findActionByUUID(uuid)
-            if (optAction.isPresent) {
+            return@createNewJavaIoTAction if (optAction.isPresent) {
                 val action = optAction.get()
                 action.encrypted = list[1].bool
                 ioTActionDAO.update(action)
-                return@createNewJavaIoTAction "Encryption toggle set."
+                "Encryption toggle set."
             } else {
-                return@createNewJavaIoTAction "No action with that UUID found."
+                "No action with that UUID found."
             }
         }
         createNewJavaIoTAction("UpdateLocalToggle", 2.toByte(), 4.toByte(), true, true) { list: IoTActionArgumentList? ->
             val uuid = UUID.fromString(list!![0].string)
             val optAction = ioTActionDAO.findActionByUUID(uuid)
-            if (optAction.isPresent) {
+            return@createNewJavaIoTAction if (optAction.isPresent) {
                 val action = optAction.get()
                 action.local = list[1].bool
                 ioTActionDAO.update(action)
-                return@createNewJavaIoTAction "Security level set."
+                "Security level set."
             } else {
-                return@createNewJavaIoTAction "No action with that UUID found."
+                "No action with that UUID found."
             }
         }
 
@@ -345,9 +346,11 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
         }
     }
 
-    fun <T : Any> registerRequest(requestName: String, ZIoTRequest: KClass<T>, exec: BiFunction<T, RequestContext, String>) {
-
-
+    fun <T : Any> registerRequest(requestName: String, request: KClass<T>, exec: BiFunction<T, RequestContext, String>) {
+        @Suppress("UNCHECKED_CAST")
+        networkRequestMap[requestName] = request as KClass<Any>
+        @Suppress("UNCHECKED_CAST")
+        requestCallbackMap[request] = exec as BiFunction<Any, RequestContext, String>
     }
 
     fun getAndUpdateInfoAboutNode(node: IoTNode) {
@@ -364,27 +367,15 @@ class ServerServer(info: ServerInformation) : PrintBaseClass("ServerServer"), Ru
             e.printStackTrace()
         }
 
-        networkArbiter.sendObject(TCPStart(0, (Math.random() * Int.MAX_VALUE).toInt(), ))
+        val tcpStart = TCPStart(0, (Math.random() * Int.MAX_VALUE).toInt(), "infoActions")
+        networkArbiter.sendObject(tcpStart, socket)
 
         val socketHelper = SocketHelper(socket)
-        val packetSectionList = IoTPacketSectionList()
 
-        // Header
-        packetSectionList.add("ZIoT")
-        // Version
-        packetSectionList.add(0.toByte())
-        // Session ID
-        packetSectionList.add()
-        packetSectionList.add("info")
-        packetSectionList.add("actions")
         try {
-            socketHelper.out.write(packetSectionList.networkResponse)
-            socketHelper.out.flush()
-            if (!Arrays.equals("ZIoT".toByteArray(), socketHelper.`in`.readNBytes(4))) {
-                log.error("Did not receive ZIoT when getting actions from external node.")
-            }
-            println("Session ID: " + socketHelper.readInt())
-            val numberOfActions = socketHelper.readInt()
+            val actionsInfo = networkArbiter.receiveObject(ZoarialDTO.V1.Request.InfoActions::class.java, socket)
+            println("Session ID: " + tcpStart.sessionId)
+            val numberOfActions = actionsInfo.numberOfActions!!
             println("Number of Actions: $numberOfActions")
             val nodeDAO = IoTNodeDAO()
             val actionDAO = IoTActionDAO()
